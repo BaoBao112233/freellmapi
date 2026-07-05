@@ -27,6 +27,7 @@ import FusionPage from '@/pages/FusionPage'
 import EmbeddingsPage from '@/pages/EmbeddingsPage'
 import ImagePage from '@/pages/ImagePage'
 import AudioPage from '@/pages/AudioPage'
+import VideoPage from '@/pages/VideoPage'
 import MediaDetailPage from '@/pages/MediaDetailPage'
 import EmbeddingDetailPage from '@/pages/EmbeddingDetailPage'
 import AnalyticsPage from '@/pages/AnalyticsPage'
@@ -237,7 +238,7 @@ function App() {
         <AuthGate>
           <div className={`min-h-screen ${isDesktopApp ? 'desktop-backdrop' : 'bg-background'}`}>
             <Navbar />
-            <main className="max-w-6xl mx-auto px-6 py-8">
+            <main className="max-w-6xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
               <Routes>
                 <Route path="/" element={<Navigate to="/models/chat" replace />} />
                 <Route path="/models" element={<Navigate to="/models/chat" replace />} />
@@ -250,6 +251,8 @@ function App() {
                 <Route path="/models/image/:id" element={<MediaDetailPage modality="image" />} />
                 <Route path="/models/audio" element={<AudioPage />} />
                 <Route path="/models/audio/:id" element={<MediaDetailPage modality="audio" />} />
+                <Route path="/models/video" element={<VideoPage />} />
+                <Route path="/models/video/:id" element={<MediaDetailPage modality="video" />} />
                 <Route path="/playground" element={<PlaygroundPage />} />
                 <Route path="/keys" element={<KeysPage />} />
                 <Route path="/fallback" element={<Navigate to="/models/chat" replace />} />

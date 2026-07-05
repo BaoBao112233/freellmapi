@@ -18,7 +18,7 @@ export const MEDIA_PLATFORMS = new Set(['nvidia', 'pollinations', 'cloudflare', 
 /** Platforms whose free media path needs no API key (anonymous). */
 const KEYLESS_CAPABLE = new Set(['pollinations']);
 
-export type MediaModality = 'image' | 'audio';
+export type MediaModality = 'image' | 'audio' | 'video';
 
 export interface MediaModelRow {
   id: number;
@@ -51,11 +51,62 @@ export interface SpeechResult {
   audio: Buffer;
   contentType: string;
 }
+export interface VideoResult {
+  platform: string;
+  modelId: string;
+  video: Buffer;
+  contentType: string;
+}
 export interface ImageParams { prompt: string; n?: number; size?: string }
 export interface SpeechParams { input: string; voice?: string; format?: string }
+export interface VideoParams {
+  prompt: string;
+  duration?: number;
+  aspectRatio?: string;
+  size?: string;
+  audio?: boolean;
+  seed?: number;
+  image?: string;
+}
 
 // Media generations are slower than chat — a cold FLUX/SDXL run can take 30-60s.
 const FETCH_TIMEOUT_MS = 60_000;
+// Video generation is far slower still: a cold veo/wan/seedance run routinely
+// takes minutes before the MP4 is returned, so it gets its own longer budget.
+const VIDEO_FETCH_TIMEOUT_MS = 300_000;
+
+/** Pollinations text-to-video defaults.
+ *
+ * Unlike image/audio media models, video rows have no upstream source: the
+ * published catalog only knows the 'image' and 'audio' modalities
+ * (catalog-sync's MEDIA_MODALITIES), so they can't arrive via catalog-sync and
+ * aren't seeded by migrations (media is runtime data, and a migration seed
+ * breaks down/up id-stability). Instead we ensure them idempotently at startup.
+ * catalog-sync's media reaper is scoped to catalog-managed modalities, so these
+ * survive a sync. Pollinations serves video keyless on the anonymous tier via a
+ * GET endpoint; `model: 'auto'` tries the chain in priority order and fails over
+ * past any tier the account can't access (402/403). */
+const POLLINATIONS_VIDEO_DEFAULTS: { modelId: string; displayName: string; priority: number }[] = [
+  { modelId: 'wan-fast', displayName: 'WAN (fast)', priority: 10 },
+  { modelId: 'wan', displayName: 'WAN', priority: 11 },
+  { modelId: 'seedance-2.0', displayName: 'Seedance 2.0', priority: 12 },
+  { modelId: 'veo', displayName: 'Veo', priority: 13 },
+];
+
+/** Idempotently seed the keyless Pollinations video models. Safe to call on
+ *  every boot: INSERT OR IGNORE keys on UNIQUE(platform, model_id), so it never
+ *  duplicates rows nor re-enables a model an operator has toggled off. */
+export function ensurePollinationsVideoModels(): void {
+  const insert = getDb().prepare(`
+    INSERT OR IGNORE INTO media_models
+      (platform, model_id, display_name, modality, priority, enabled, quota_label)
+    VALUES ('pollinations', ?, ?, 'video', ?, 1, 'pollinations (anonymous)')
+  `);
+  const seed = getDb().transaction(() => {
+    for (const m of POLLINATIONS_VIDEO_DEFAULTS) insert.run(m.modelId, m.displayName, m.priority);
+  });
+  seed();
+}
 
 export function listMediaModels(modality: MediaModality): MediaModelRow[] {
   return getDb()
@@ -109,8 +160,8 @@ function getProviderCredential(row: MediaModelRow): ProviderCredential | null {
   }
 }
 
-async function mediaFetch(url: string, platform: string, init: RequestInit): Promise<Response> {
-  const r = await proxyFetch(url, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }, platform);
+async function mediaFetch(url: string, platform: string, init: RequestInit, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
+  const r = await proxyFetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) }, platform);
   if (!r.ok) {
     const body = await r.text().catch(() => '');
     throw new MediaError(`${platform} ${r.status}: ${body.slice(0, 200)}`, r.status);
@@ -340,6 +391,76 @@ async function callSpeechProvider(
   }
 }
 
+async function callVideoProvider(
+  row: MediaModelRow,
+  credential: ProviderCredential,
+  p: VideoParams,
+): Promise<{ video: Buffer; contentType: string }> {
+  const key = credential.key;
+  switch (row.platform) {
+    case 'pollinations': {
+      // Keyless GET video endpoint on gen.pollinations.ai returns a raw MP4.
+      // Prompt goes in the path; model/duration/aspectRatio/audio in the query.
+      // The anonymous tier needs no key; only send one when it's a real sk_ token.
+      const params = new URLSearchParams({ model: row.model_id });
+      if (p.size) {
+        const [w, h] = parseSize(p.size);
+        params.set('width', String(w));
+        params.set('height', String(h));
+      }
+      if (p.duration !== undefined) params.set('duration', String(p.duration));
+      if (p.aspectRatio) params.set('aspectRatio', p.aspectRatio);
+      if (p.audio !== undefined) params.set('audio', String(p.audio));
+      if (p.seed !== undefined) params.set('seed', String(p.seed));
+      if (p.image) params.set('image', p.image);
+      const realKey = key && key.startsWith('sk_') ? key : null;
+      const url = `https://gen.pollinations.ai/video/${encodeURIComponent(p.prompt)}?${params.toString()}`;
+      const r = await mediaFetch(
+        url,
+        'pollinations',
+        { method: 'GET', headers: { ...(realKey ? { Authorization: `Bearer ${realKey}` } : {}) } },
+        VIDEO_FETCH_TIMEOUT_MS,
+      );
+      const buf = Buffer.from(await r.arrayBuffer());
+      const ct = r.headers.get('content-type') ?? '';
+      return { video: buf, contentType: ct.startsWith('video/') ? ct : 'video/mp4' };
+    }
+    case 'custom': {
+      if (!credential.baseUrl) throw new MediaError('custom video provider is missing base_url', 500);
+      const body: Record<string, unknown> = { model: row.model_id, prompt: p.prompt };
+      if (p.duration !== undefined) body.duration = p.duration;
+      if (p.aspectRatio) body.aspect_ratio = p.aspectRatio;
+      if (p.size) body.size = p.size;
+      const r = await mediaFetch(
+        `${credential.baseUrl}/videos/generations`,
+        'custom',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key ?? 'no-key'}` },
+          body: JSON.stringify(body),
+        },
+        VIDEO_FETCH_TIMEOUT_MS,
+      );
+      const ct = r.headers.get('content-type') ?? '';
+      // A custom endpoint may return the MP4 directly, or JSON carrying a
+      // base64 blob or a URL to fetch.
+      if (ct.includes('application/json')) {
+        const j = (await r.json()) as { data?: { b64_json?: string; url?: string }[]; url?: string; b64_json?: string };
+        const first = j.data?.[0] ?? { b64_json: j.b64_json, url: j.url };
+        if (first.b64_json) return { video: Buffer.from(first.b64_json, 'base64'), contentType: 'video/mp4' };
+        if (first.url) {
+          const vr = await mediaFetch(first.url, 'custom', { method: 'GET' }, VIDEO_FETCH_TIMEOUT_MS);
+          return { video: Buffer.from(await vr.arrayBuffer()), contentType: vr.headers.get('content-type') ?? 'video/mp4' };
+        }
+        throw new MediaError('custom video provider returned no video', 502);
+      }
+      return { video: Buffer.from(await r.arrayBuffer()), contentType: ct.startsWith('video/') ? ct : 'video/mp4' };
+    }
+    default:
+      throw new MediaError(`no video adapter for platform '${row.platform}'`, 500);
+  }
+}
+
 /** Map the request's `model` to a candidate chain within one modality:
  *  'auto'/empty → every enabled provider for the modality (failover order),
  *  a provider model id → just that row. */
@@ -422,4 +543,28 @@ export async function runSpeech(model: string | undefined, params: SpeechParams)
     }
   }
   throw chainError('audio', lastError);
+}
+
+/** Generate a video, failing over across providers serving the modality. */
+export async function runVideoGeneration(model: string | undefined, params: VideoParams): Promise<VideoResult> {
+  const chain = resolveMediaChain(model, 'video');
+  let lastError: MediaError | null = null;
+  for (const row of chain) {
+    const credential = KEYLESS_CAPABLE.has(row.platform)
+      ? { id: null, key: null, baseUrl: null }
+      : getProviderCredential(row);
+    if (!credential) continue;
+    const started = Date.now();
+    try {
+      const out = await callVideoProvider(row, credential, params);
+      if (!out.video.length) throw new MediaError('upstream returned no video', 502);
+      logMedia(row, credential.id, 'success', Date.now() - started, null);
+      return { platform: row.platform, modelId: row.model_id, video: out.video, contentType: out.contentType };
+    } catch (err: any) {
+      const e = err instanceof MediaError ? err : new MediaError(String(err?.message ?? err), 502);
+      logMedia(row, credential.id, 'error', Date.now() - started, e.message.slice(0, 300));
+      lastError = e;
+    }
+  }
+  throw chainError('video', lastError);
 }

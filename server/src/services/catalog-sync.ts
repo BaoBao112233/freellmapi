@@ -303,10 +303,11 @@ export function applyCatalog(db: DatabaseType.Database, catalog: Catalog): NonNu
 
     // Remove media models the catalog no longer lists (own table, no fallback_config).
     const mediaCandidates = db
-      .prepare('SELECT id, platform, model_id FROM media_models')
-      .all() as { id: number; platform: string; model_id: string }[];
+      .prepare('SELECT id, platform, model_id, modality FROM media_models')
+      .all() as { id: number; platform: string; model_id: string; modality: string }[];
     const deleteMedia = db.prepare('DELETE FROM media_models WHERE id = ?');
     for (const c of mediaCandidates) {
+      if (!MEDIA_MODALITIES.has(c.modality)) continue; // modality the catalog doesn't publish (e.g. locally-seeded video) — leave it
       if (!MEDIA_PLATFORMS.has(c.platform)) continue; // not media-managed by this binary
       if (!inMediaCatalog.has(`${c.platform}:${c.model_id}`)) {
         deleteMedia.run(c.id);

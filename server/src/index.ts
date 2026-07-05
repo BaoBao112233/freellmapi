@@ -9,6 +9,7 @@ import { NodeScheduler } from './lib/scheduler.js';
 import { loadConfig } from './lib/config.js';
 import { applyDeclarativeConfigFromEnv } from './services/declarative-config.js';
 import { restoreDbBackupIfNeeded, startDbBackupPump } from './lib/db-backup.js';
+import { ensurePollinationsVideoModels } from './services/media.js';
 
 async function main() {
   const config = loadConfig();
@@ -26,6 +27,7 @@ async function main() {
     await restoreDbBackupIfNeeded();
   }
   initDb(config.dbPath ?? undefined);
+  ensurePollinationsVideoModels(); // keyless video defaults (no catalog source)
   applyDeclarativeConfigFromEnv();
 
   // Load the persisted proxy settings from the DB (env var wins if set).

@@ -12,7 +12,7 @@ export interface MediaModel {
   platform: string
   modelId: string
   displayName: string
-  modality: 'image' | 'audio'
+  modality: 'image' | 'audio' | 'video'
   enabled: boolean
   quotaLabel: string
   keyCount: number
@@ -47,7 +47,7 @@ export function groupMedia(models: MediaModel[]): MediaGroup[] {
 // per-provider enable toggle (saved immediately). Rows arrive from the signed
 // catalog via catalog-sync, so the list self-populates once a media catalog is
 // applied.
-export function MediaModelsView({ modality }: { modality: 'image' | 'audio' }) {
+export function MediaModelsView({ modality }: { modality: 'image' | 'audio' | 'video' }) {
   const { t } = useI18n()
   const queryClient = useQueryClient()
 
@@ -68,9 +68,9 @@ export function MediaModelsView({ modality }: { modality: 'image' | 'audio' }) {
   })
 
   const groups = groupMedia((data?.models ?? []).filter(m => m.modality === modality))
-  const title = modality === 'image' ? t('models.imageTitle') : t('models.audioTitle')
-  const description = modality === 'image' ? t('models.imageDesc') : t('models.audioDesc')
-  const endpoint = modality === 'image' ? '/v1/images/generations' : '/v1/audio/speech'
+  const title = modality === 'image' ? t('models.imageTitle') : modality === 'audio' ? t('models.audioTitle') : t('models.videoTitle')
+  const description = modality === 'image' ? t('models.imageDesc') : modality === 'audio' ? t('models.audioDesc') : t('models.videoDesc')
+  const endpoint = modality === 'image' ? '/v1/images/generations' : modality === 'audio' ? '/v1/audio/speech' : '/v1/videos/generations'
 
   return (
     <div>

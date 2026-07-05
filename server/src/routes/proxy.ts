@@ -6,7 +6,7 @@ import type { ChatMessage, ChatToolCall, ModelListRow } from '@freellmapi/shared
 import { routeRequest, resolveRoutingChain, resolveModelGroupCandidates, recordRateLimitHit, recordSuccess, hasEnabledVisionModel, hasEnabledToolsModel, type RouteResult, type ResolvedChain, type ChainRow } from '../services/router.js';
 import { recordRequest, recordTokens, setCooldown, getCooldownDurationForLimit, PAYMENT_REQUIRED_COOLDOWN_MS, MODEL_FORBIDDEN_COOLDOWN_MS, learnLimitFromError } from '../services/ratelimit.js';
 import { runEmbeddings, EmbeddingsError } from '../services/embeddings.js';
-import { runImageGeneration, runSpeech, MediaError } from '../services/media.js';
+import { runImageGeneration, runSpeech, runVideoGeneration, MediaError } from '../services/media.js';
 import { getDb, getUnifiedApiKey } from '../db/index.js';
 import { contentToString, messageHasImage, normalizeOutboundContent, sanitizeResponse } from '../lib/content.js';
 import { repairToolArguments, toolSchemaMap } from '../lib/tool-args.js';
@@ -538,6 +538,54 @@ proxyRouter.post('/audio/speech', async (req: Request, res: Response) => {
     const status = err instanceof MediaError ? err.status : 502;
     const httpStatus = status >= 400 && status < 600 ? status : 502;
     res.status(httpStatus).json({ error: { message: `speech error: ${err?.message ?? 'unknown'}`, type: mediaErrorType(status) } });
+  }
+});
+
+// Text-to-video. Returns raw MP4 bytes (Pollinations et al. hand back the file
+// directly — no hosted URL). Same media-catalog routing/failover as images.
+// NOTE: video generation is slow (seconds→minutes); clients must use a long
+// read timeout. `size` is "WxH", `aspect_ratio` is "16:9" | "9:16".
+const VideoBody = z.object({
+  model: z.string().optional(),
+  prompt: z.string().min(1),
+  duration: z.number().int().positive().optional(),
+  aspect_ratio: z.string().optional(),
+  size: z.string().optional(),
+  audio: z.boolean().optional(),
+  seed: z.number().int().optional(),
+  image: z.string().optional(),
+});
+
+proxyRouter.post('/videos/generations', async (req: Request, res: Response) => {
+  const token = extractApiToken(req);
+  const unifiedKey = getUnifiedApiKey();
+  if (!token || !timingSafeStringEqual(token, unifiedKey)) {
+    res.status(401).json({ error: { message: 'Invalid API key', type: 'authentication_error' } });
+    return;
+  }
+  const parsed = VideoBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: { message: 'Invalid request: `prompt` is required', type: 'invalid_request_error' } });
+    return;
+  }
+  try {
+    const result = await runVideoGeneration(parsed.data.model, {
+      prompt: parsed.data.prompt,
+      duration: parsed.data.duration,
+      aspectRatio: parsed.data.aspect_ratio,
+      size: parsed.data.size,
+      audio: parsed.data.audio,
+      seed: parsed.data.seed,
+      image: parsed.data.image,
+    });
+    res.setHeader('Content-Type', result.contentType);
+    res.setHeader('X-Provider', result.platform);
+    res.setHeader('X-Model', result.modelId);
+    res.send(result.video);
+  } catch (err: any) {
+    const status = err instanceof MediaError ? err.status : 502;
+    const httpStatus = status >= 400 && status < 600 ? status : 502;
+    res.status(httpStatus).json({ error: { message: `video generation error: ${err?.message ?? 'unknown'}`, type: mediaErrorType(status) } });
   }
 });
 

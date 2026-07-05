@@ -90,6 +90,7 @@ const CUSTOM_MODEL_KIND_LABEL: Record<ApiKeyModel['kind'], string> = {
   embedding: 'keys.customTypeEmbedding',
   image: 'keys.customTypeImage',
   audio: 'keys.customTypeAudio',
+  video: 'keys.customTypeVideo',
 }
 
 function customModelDeleteKey(model: ApiKeyModel): string {
@@ -370,7 +371,7 @@ function parseModelList(raw: string): string[] {
 function CustomProviderSection() {
   const { t } = useI18n()
   const queryClient = useQueryClient()
-  const [customType, setCustomType] = useState<'chat' | 'embedding' | 'image' | 'audio'>('chat')
+  const [customType, setCustomType] = useState<'chat' | 'embedding' | 'image' | 'audio' | 'video'>('chat')
   const [baseUrl, setBaseUrl] = useState('')
   const [model, setModel] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -441,14 +442,18 @@ function CustomProviderSection() {
       ? 'text-embedding-3-small'
       : customType === 'image'
         ? 'gpt-image-1'
-        : 'gpt-4o-mini-tts'
+        : customType === 'audio'
+          ? 'gpt-4o-mini-tts'
+          : 'wan'
   const addLabel = customType === 'chat'
     ? (multiple ? t('keys.addModels', { count: models.length }) : t('keys.addModel'))
     : customType === 'embedding'
       ? t('keys.addEmbeddingModel')
       : customType === 'image'
         ? t('keys.addImageModel')
-        : t('keys.addAudioModel')
+        : customType === 'audio'
+          ? t('keys.addAudioModel')
+          : t('keys.addVideoModel')
 
   return (
     <section>
@@ -457,10 +462,10 @@ function CustomProviderSection() {
         {t('keys.addCustomDescription')}
       </p>
       <form onSubmit={submit} className="flex flex-wrap items-end gap-3 rounded-3xl border p-4 bg-card">
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 w-full sm:w-auto">
           <Label className="text-xs">{t('keys.customType')}</Label>
           <Select value={customType} onValueChange={(v) => setCustomType(v as typeof customType)}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full sm:w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -468,10 +473,11 @@ function CustomProviderSection() {
               <SelectItem value="embedding">{t('keys.customTypeEmbedding')}</SelectItem>
               <SelectItem value="image">{t('keys.customTypeImage')}</SelectItem>
               <SelectItem value="audio">{t('keys.customTypeAudio')}</SelectItem>
+              <SelectItem value="video">{t('keys.customTypeVideo')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1.5 flex-1 min-w-[240px]">
+        <div className="space-y-1.5 w-full sm:flex-1 sm:min-w-[240px]">
           <Label className="text-xs">{t('keys.customBaseUrl')}</Label>
           <Input
             value={baseUrl}
@@ -480,48 +486,48 @@ function CustomProviderSection() {
             className="font-mono text-xs"
           />
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 w-full sm:w-auto">
           <Label className="text-xs">{customType === 'chat' ? t('keys.customModels') : t('keys.customModel')}</Label>
           <Textarea
             value={model}
             onChange={e => setModel(e.target.value)}
             placeholder={modelPlaceholder}
             rows={customType === 'chat' ? 2 : 1}
-            className="w-[200px] font-mono text-xs"
+            className="w-full sm:w-[200px] font-mono text-xs"
           />
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 w-full sm:w-auto">
           <Label className="text-xs">{t('keys.customDisplayName')}</Label>
           <Input
             value={displayName}
             onChange={e => setDisplayName(e.target.value)}
             placeholder={multiple ? t('keys.customDisplayNamePerModel') : t('keys.customDisplayNameOptional')}
             disabled={multiple}
-            className="w-[150px]"
+            className="w-full sm:w-[150px]"
           />
         </div>
         {customType === 'embedding' && (
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 w-full sm:w-auto">
             <Label className="text-xs">{t('keys.customFamily')}</Label>
             <Input
               value={family}
               onChange={e => setFamily(e.target.value)}
               placeholder={embeddingsData?.families?.[0]?.family ?? t('keys.customFamilyPlaceholder')}
-              className="w-[190px] font-mono text-xs"
+              className="w-full sm:w-[190px] font-mono text-xs"
             />
           </div>
         )}
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 w-full sm:w-auto">
           <Label className="text-xs">{t('keys.customApiKey')}</Label>
           <Input
             type="password"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
             placeholder={t('keys.customDisplayNameOptional')}
-            className="w-[150px] font-mono text-xs"
+            className="w-full sm:w-[150px] font-mono text-xs"
           />
         </div>
-        <Button type="submit" size="sm" disabled={!baseUrl || models.length === 0 || addCustom.isPending}>
+        <Button type="submit" size="sm" className="w-full sm:w-auto" disabled={!baseUrl || models.length === 0 || addCustom.isPending}>
           {addCustom.isPending ? t('keys.addingCustom') : addLabel}
         </Button>
       </form>
@@ -837,11 +843,11 @@ export default function KeysPage() {
 
         <section>
           <h2 className="text-sm font-medium mb-3">{t('keys.addProvider')}</h2>
-          <form onSubmit={handleSubmit} className="flex flex-wrap gap-3 rounded-3xl border p-4 bg-card">
-            <div className="space-y-1.5">
+          <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3 rounded-3xl border p-4 bg-card">
+            <div className="space-y-1.5 w-full sm:w-auto">
               <Label className="text-xs">{t('keys.platform')}</Label>
               <Select value={platform} onValueChange={(v) => setPlatform(v as Platform)}>
-                <SelectTrigger className="w-[220px]">
+                <SelectTrigger className="w-full sm:w-[220px]">
                   <SelectValue placeholder={t('keys.selectPlatform')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -856,17 +862,17 @@ export default function KeysPage() {
               })()}
             </div>
             {needsAccountId && (
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 w-full sm:w-auto">
                 <Label className="text-xs">{t('keys.accountId')}</Label>
                 <Input
                   value={accountId}
                   onChange={e => setAccountId(e.target.value)}
                   placeholder="a1b2c3d4…"
-                  className="w-[200px] font-mono text-xs"
+                  className="w-full sm:w-[200px] font-mono text-xs"
                 />
               </div>
             )}
-            <div className="space-y-1.5 flex-1 min-w-[240px]">
+            <div className="space-y-1.5 w-full sm:flex-1 sm:min-w-[240px]">
               <Label className="text-xs">{needsAccountId ? t('keys.apiToken') : t('keys.customApiKey')}</Label>
               <Input
                 type="password"
@@ -882,14 +888,14 @@ export default function KeysPage() {
                 </p>
               )}
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 w-full sm:w-auto">
               <Label className="text-xs">{t('keys.label')}</Label>
-              <div className="flex flex-wrap items-center space-x-3">
+              <div className="flex items-center gap-3">
                 <Input
                   value={label}
                   onChange={e => setLabel(e.target.value)}
                   placeholder={t('keys.customDisplayNameOptional')}
-                  className="w-[160px]"
+                  className="flex-1 sm:flex-none sm:w-[160px]"
                 />
                 <Button type="submit" size="sm" disabled={!platform || (!isKeyless && !apiKey) || (needsAccountId && !accountId) || addKey.isPending}>
                   {addKey.isPending ? t('keys.adding') : isKeyless ? t('keys.enable') : t('keys.addKey')}

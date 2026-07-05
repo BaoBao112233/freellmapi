@@ -71,8 +71,8 @@ keysRouter.get('/', (_req: Request, res: Response) => {
   }
   for (const list of modelsByKeyId.values()) {
     list.sort((a, b) => {
-      const ka = ['chat', 'embedding', 'image', 'audio'].indexOf(a.kind);
-      const kb = ['chat', 'embedding', 'image', 'audio'].indexOf(b.kind);
+      const ka = ['chat', 'embedding', 'image', 'audio', 'video'].indexOf(a.kind);
+      const kb = ['chat', 'embedding', 'image', 'audio', 'video'].indexOf(b.kind);
       return (ka - kb) || String(a.displayName).localeCompare(String(b.displayName));
     });
   }
