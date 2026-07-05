@@ -1,3 +1,5 @@
+import { getApiOrigin } from './runtime';
+
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 const TOKEN_KEY = 'freellmapi_dashboard_token';
 
@@ -17,7 +19,7 @@ export const UNAUTHORIZED_EVENT = 'freellmapi:unauthorized';
 
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getToken();
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${getApiOrigin()}${BASE}${path}`, {
     // `...options` first so an explicit method/body/signal applies, but headers
     // are merged last — otherwise an options.headers would clobber the
     // Content-Type and Authorization we set here.

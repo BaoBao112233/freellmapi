@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/api'
+import { resolveApiBaseUrl } from '@/lib/runtime'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -199,9 +200,7 @@ function UnifiedKeySection() {
 
   const apiKey = data?.apiKey ?? ''
   const masked = apiKey ? apiKey.slice(0, 13) + '•'.repeat(32) : '…'
-  const baseUrl = import.meta.env.DEV
-    ? `http://${window.location.hostname}:${__SERVER_PORT__}/v1`
-    : `${window.location.origin}/v1`
+  const baseUrl = `${resolveApiBaseUrl()}/v1`
 
   function copy() {
     navigator.clipboard.writeText(apiKey)
@@ -541,9 +540,7 @@ function AnthropicSection() {
 
   // Anthropic clients append `/v1/messages` to the base URL, so they want the
   // bare origin (OpenAI clients use origin + /v1, shown in the key section).
-  const origin = import.meta.env.DEV
-    ? `http://${window.location.hostname}:${__SERVER_PORT__}`
-    : window.location.origin
+  const origin = resolveApiBaseUrl()
 
   const { data: mapData } = useQuery<{ map: AnthropicMap }>({
     queryKey: ['anthropic-map'],

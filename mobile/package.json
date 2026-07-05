@@ -1,0 +1,34 @@
+{
+  "name": "freellmapi-mobile",
+  "version": "0.1.0",
+  "description": "FreeLLMAPI Android app — the full router (Node server + dashboard) running standalone on-device via nodejs-mobile.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:client": "npm --prefix .. run build -w client",
+    "bundle:server": "node scripts/bundle-server.mjs",
+    "stage:node": "node scripts/stage-nodejs-project.mjs",
+    "prepare:web": "node scripts/stage-client.mjs",
+    "fetch:vendor": "node scripts/fetch-nodejs-mobile.mjs",
+    "stage:android": "node scripts/stage-android-assets.mjs",
+    "stage:native": "node scripts/stage-native-libnode.mjs",
+    "patch:android": "node scripts/patch-android-gradle.mjs",
+    "test:shim": "node scripts/test-shim.mjs",
+    "test:server": "node scripts/smoke-server.mjs",
+    "build:all": "npm run bundle:server && npm run stage:node && npm run prepare:web",
+    "cap:add": "cap add android && npm run patch:android",
+    "sync": "npm run fetch:vendor && npm run build:all && cap sync android && npm run patch:android && npm run stage:android && npm run stage:native",
+    "apk:debug": "npm run sync && cd android && ./gradlew :app:assembleDebug",
+    "run:android": "npm run sync && cap run android"
+  },
+  "dependencies": {
+    "node-sqlite3-wasm": "^0.8.59"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
+    "esbuild": "^0.24.0",
+    "nodejs-mobile-cordova": "^0.4.3"
+  }
+}
