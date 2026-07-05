@@ -7,6 +7,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { buildModelOptions } from '@/lib/model-groups'
 import { Tooltip } from '@/components/tooltip'
 import { PageHeader } from '@/components/page-header'
+import { apiBaseUrl } from '@/components/api-usage'
 import { Markdown } from '@/components/markdown'
 import { CopyButton } from '@/components/copy-button'
 import { useI18n } from '@/i18n'
@@ -237,9 +238,11 @@ export default function PlaygroundPage() {
       // Playground can show the other models arriving before the final answer.
       if (isFusion) body.stream = true
 
-      const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+      // Use apiBaseUrl() (the resolved server origin) rather than a relative
+      // path: on native (Capacitor WebView) a relative /v1 URL resolves to the
+      // WebView origin and returns the SPA's index.html instead of JSON.
       const start = Date.now()
-      const res = await fetch(`${base}/v1/chat/completions`, {
+      const res = await fetch(`${apiBaseUrl()}/chat/completions`, {
         method: 'POST',
         headers,
         body: JSON.stringify(body),

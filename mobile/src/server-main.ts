@@ -17,6 +17,7 @@ import { startHealthChecker } from '../../server/src/services/health.js';
 import { startCatalogSync } from '../../server/src/services/catalog-sync.js';
 import { applyProxyUrl, applyProxyEnabled, applyProxyBypass } from '../../server/src/lib/proxy.js';
 import { applyDeclarativeConfigFromEnv } from '../../server/src/services/declarative-config.js';
+import { ensurePollinationsVideoModels } from '../../server/src/services/media.js';
 import { NodeScheduler } from '../../server/src/lib/scheduler.js';
 import { userCount, createUser, createSession } from '../../server/src/services/auth.js';
 
@@ -67,6 +68,7 @@ export async function startMobileServer(opts: StartOptions): Promise<MobileServe
   };
 
   initDb(config.dbPath);
+  ensurePollinationsVideoModels(); // keyless video defaults (no catalog source)
   applyDeclarativeConfigFromEnv();
   applyProxyUrl(getSetting('proxy_url') ?? '');
   applyProxyEnabled(getSetting('proxy_enabled') !== '0');
