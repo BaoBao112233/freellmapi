@@ -9,9 +9,11 @@
 // lives in nodejs-project/main.js.
 import '../../server/src/env.js';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import type { Server } from 'node:http';
 import { createApp } from '../../server/src/app.js';
 import { initDb, getDb, getSetting } from '../../server/src/db/index.js';
+import { installProcessSafetyNet } from '../../server/src/lib/process-safety-net.js';
 import { loadConfig } from '../../server/src/lib/config.js';
 import { startHealthChecker } from '../../server/src/services/health.js';
 import { startCatalogSync } from '../../server/src/services/catalog-sync.js';
@@ -47,6 +49,12 @@ export async function startMobileServer(opts: StartOptions): Promise<MobileServe
     delete process.env.NODE_ENV;
   }
 
+  // Same guard the desktop entry installs: a provider socket reset landing on a
+  // stream with no listener must not take down the on-device Node instance —
+  // nodejs-mobile can only start once per app process, so a crash here means no
+  // server until Android kills the whole app.
+  installProcessSafetyNet();
+
   const host = opts.host ?? '127.0.0.1';
   const base = loadConfig();
   const config = {
@@ -67,7 +75,7 @@ export async function startMobileServer(opts: StartOptions): Promise<MobileServe
     ],
   };
 
-  initDb(config.dbPath);
+  await initDbClearingStaleLock(config.dbPath);
   ensurePollinationsVideoModels(); // keyless video defaults (no catalog source)
   applyDeclarativeConfigFromEnv();
   applyProxyUrl(getSetting('proxy_url') ?? '');
@@ -92,6 +100,34 @@ export async function startMobileServer(opts: StartOptions): Promise<MobileServe
   startCatalogSync(scheduler);
 
   return { server, port, token };
+}
+
+// node-sqlite3-wasm locks the DB with a `<db>.lock` dot-dir that only a clean
+// db.close() removes — and on Android the app is killed, never closed, so every
+// launch after the first write finds a stale lock and initDb throws SQLITE_BUSY
+// ("database is locked") until the user clears app data. A lock at boot is
+// stale by construction (main.js runs once per process and Android runs a
+// single process for this app); the only non-stale case is the sliver where a
+// previous process is still being torn down — and even that process would never
+// remove the lock. So: short grace, sweep the lock, retry.
+async function initDbClearingStaleLock(dbPath: string): Promise<void> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      initDb(dbPath);
+      return;
+    } catch (err) {
+      const locked = String((err as Error)?.message ?? err).includes('database is locked');
+      if (!locked || attempt >= 3) throw err;
+      try {
+        getDb().close(); // release the half-open handle from the failed attempt
+      } catch {
+        /* connection never opened */
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      fs.rmSync(`${dbPath}.lock`, { recursive: true, force: true });
+      console.log('[mobile] cleared stale DB lock, retrying init');
+    }
+  }
 }
 
 // Mirror the desktop app: the dashboard authenticates as a hidden local user

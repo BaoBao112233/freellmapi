@@ -1,0 +1,316 @@
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>FreeLLMAPI · Free AI Keys</title>
+<style>
+  :root {
+    --bg:        #f5f6f4;
+    --surface:   #ffffff;
+    --surface-2: #eceeea;
+    --line:      #dcdfd8;
+    --ink:       #1c211d;
+    --ink-soft:  #545c53;
+    --ink-faint: #8a9188;
+    --accent:    #d9832a;   /* warm amber — "energy / free power" */
+    --accent-ink:#ffffff;
+    --free:      #1f9d6b;   /* no-key-needed */
+    --free-bg:   #e2f3ea;
+    --pick:      #b9701f;   /* recommended */
+    --pick-bg:   #f9ecdb;
+    --warn:      #c1543a;   /* ToS caution */
+    --warn-bg:   #f6e3dd;
+    --radius:    16px;
+    --shadow:    0 1px 2px rgba(28,33,29,.06), 0 6px 20px rgba(28,33,29,.05);
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#14161a; --surface:#1c1f24; --surface-2:#23272e; --line:#2e333b;
+      --ink:#eceef0; --ink-soft:#a8afb8; --ink-faint:#6d757f;
+      --accent:#e79949; --accent-ink:#20160a;
+      --free:#3fc98e; --free-bg:#12332a; --pick:#f0a75a; --pick-bg:#33260f;
+      --warn:#e57a5f; --warn-bg:#38221c;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg:#f5f6f4; --surface:#ffffff; --surface-2:#eceeea; --line:#dcdfd8;
+    --ink:#1c211d; --ink-soft:#545c53; --ink-faint:#8a9188;
+    --accent:#d9832a; --accent-ink:#ffffff;
+    --free:#1f9d6b; --free-bg:#e2f3ea; --pick:#b9701f; --pick-bg:#f9ecdb;
+    --warn:#c1543a; --warn-bg:#f6e3dd;
+    --shadow: 0 1px 2px rgba(28,33,29,.06), 0 6px 20px rgba(28,33,29,.05);
+  }
+  :root[data-theme="dark"] {
+    --bg:#14161a; --surface:#1c1f24; --surface-2:#23272e; --line:#2e333b;
+    --ink:#eceef0; --ink-soft:#a8afb8; --ink-faint:#6d757f;
+    --accent:#e79949; --accent-ink:#20160a;
+    --free:#3fc98e; --free-bg:#12332a; --pick:#f0a75a; --pick-bg:#33260f;
+    --warn:#e57a5f; --warn-bg:#38221c;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap { max-width:480px; margin:0 auto; padding:0 16px 48px; }
+
+  /* top bar */
+  header {
+    position:sticky; top:0; z-index:10;
+    background:color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter:saturate(1.4) blur(12px);
+    border-bottom:1px solid var(--line);
+    padding: max(14px, env(safe-area-inset-top)) 16px 12px;
+  }
+  .bar { max-width:480px; margin:0 auto; display:flex; align-items:center; gap:11px; }
+  .mark {
+    width:34px; height:34px; border-radius:9px; flex:none;
+    background:linear-gradient(150deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--warn)));
+    display:grid; place-items:center; color:var(--accent-ink);
+    font-weight:800; font-size:18px; box-shadow:var(--shadow);
+  }
+  .bar h1 { font-size:16px; margin:0; letter-spacing:-.01em; font-weight:750; }
+  .bar p  { font-size:11.5px; margin:1px 0 0; color:var(--ink-faint); letter-spacing:.02em; }
+
+  h2 {
+    font-size:12px; text-transform:uppercase; letter-spacing:.11em;
+    color:var(--ink-faint); font-weight:700; margin:30px 4px 12px;
+    display:flex; align-items:center; gap:8px;
+  }
+  h2 .n { color:var(--accent); font-variant-numeric:tabular-nums; }
+
+  /* stat strip */
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:16px; }
+  .stat {
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:12px 10px; text-align:center;
+  }
+  .stat b { display:block; font-size:19px; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+  .stat span { font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; }
+
+  /* access card */
+  .panel {
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:16px; margin-top:14px;
+  }
+  .cta {
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%; text-decoration:none; border:none; cursor:pointer;
+    background:var(--accent); color:var(--accent-ink);
+    font-family:var(--sans); font-weight:750; font-size:15.5px;
+    padding:14px; border-radius:12px; letter-spacing:.01em;
+  }
+  .cta:active { transform:translateY(1px); }
+  .cta small { font-weight:600; opacity:.85; font-size:12px; }
+
+  .field { margin-top:12px; }
+  .field label {
+    display:block; font-size:11px; color:var(--ink-faint);
+    text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px; font-weight:600;
+  }
+  .copy {
+    display:flex; align-items:center; gap:8px; width:100%;
+    background:var(--surface-2); border:1px solid var(--line);
+    border-radius:10px; padding:10px 12px; cursor:pointer; text-align:left;
+    font-family:var(--mono); font-size:12.5px; color:var(--ink);
+  }
+  .copy code { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .copy .ico { flex:none; color:var(--ink-faint); font-size:12px; font-family:var(--sans); font-weight:600; }
+  .copy.ok { border-color:var(--free); }
+  .copy.ok .ico { color:var(--free); }
+
+  /* provider cards */
+  .grid { display:flex; flex-direction:column; gap:9px; }
+  .card {
+    display:flex; align-items:center; gap:12px; text-decoration:none;
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:13px; padding:13px 14px; color:inherit;
+    transition:border-color .12s ease, transform .08s ease;
+  }
+  .card:active { transform:scale(.99); border-color:var(--accent); }
+  .card .body { flex:1; min-width:0; }
+  .card .top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .card .name { font-weight:700; font-size:15px; letter-spacing:-.01em; }
+  .card .desc { font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+  .card .host { font-size:11px; color:var(--ink-faint); font-family:var(--mono); margin-top:3px; }
+  .chev { color:var(--ink-faint); font-size:18px; flex:none; }
+
+  .chip {
+    font-size:10px; font-weight:700; letter-spacing:.03em;
+    padding:2.5px 7px; border-radius:99px; white-space:nowrap; text-transform:uppercase;
+  }
+  .chip.free { background:var(--free-bg); color:var(--free); }
+  .chip.pick { background:var(--pick-bg); color:var(--pick); }
+  .chip.warn { background:var(--warn-bg); color:var(--warn); }
+
+  .note {
+    font-size:12.5px; color:var(--ink-soft); margin:12px 4px 0; line-height:1.6;
+  }
+  .note b { color:var(--ink); }
+  footer { margin-top:34px; padding-top:18px; border-top:1px solid var(--line); }
+  footer p { font-size:11.5px; color:var(--ink-faint); margin:0 4px; line-height:1.65; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+</style>
+
+<header>
+  <div class="bar">
+    <div class="mark">F</div>
+    <div>
+      <h1>FreeLLMAPI</h1>
+      <p>Gộp 16 nhà cung cấp AI miễn phí</p>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="stats">
+    <div class="stat"><b>16</b><span>Provider</span></div>
+    <div class="stat"><b>64</b><span>Model</span></div>
+    <div class="stat"><b>~1.7B</b><span>Tokens/th</span></div>
+  </div>
+
+  <!-- ACCESS -->
+  <div class="panel">
+    <a class="cta" href="http://localhost:5173" target="_blank" rel="noopener">
+      Mở Dashboard <small>· localhost:5173</small>
+    </a>
+    <div class="field">
+      <label>Unified API key — chạm để copy</label>
+      <button class="copy" data-copy="freellmapi-e5b28380b75aa6640d0758046cf2f8a802d0596645aecfa5">
+        <code>freellmapi-e5b28380…aecfa5</code><span class="ico">Copy</span>
+      </button>
+    </div>
+    <div class="field">
+      <label>API base — cho app / SDK</label>
+      <button class="copy" data-copy="http://localhost:3001/v1">
+        <code>http://localhost:3001/v1</code><span class="ico">Copy</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- QUICK START -->
+  <h2>Nên lấy trước <span class="n">3</span></h2>
+  <div class="grid">
+    <a class="card" href="https://console.groq.com/keys" target="_blank" rel="noopener">
+      <div class="body">
+        <div class="top"><span class="name">Groq</span><span class="chip pick">⭐ Nhanh nhất</span></div>
+        <div class="desc">Llama 3.3 · Llama 4 · GPT-OSS · Qwen3</div>
+        <div class="host">console.groq.com/keys</div>
+      </div><span class="chev">›</span>
+    </a>
+    <a class="card" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">
+      <div class="body">
+        <div class="top"><span class="name">Google Gemini</span><span class="chip pick">⭐ Thông minh</span></div>
+        <div class="desc">Gemini 2.5 Flash · 3.x previews</div>
+        <div class="host">aistudio.google.com/apikey</div>
+      </div><span class="chev">›</span>
+    </a>
+    <a class="card" href="https://cloud.cerebras.ai" target="_blank" rel="noopener">
+      <div class="body">
+        <div class="top"><span class="name">Cerebras</span><span class="chip pick">⭐ Cực nhanh</span></div>
+        <div class="desc">Qwen3 235B</div>
+        <div class="host">cloud.cerebras.ai</div>
+      </div><span class="chev">›</span>
+    </a>
+  </div>
+
+  <!-- NO KEY -->
+  <h2>Không cần key · bật là chạy <span class="n">5</span></h2>
+  <div class="grid">
+    <a class="card" href="https://pollinations.ai" target="_blank" rel="noopener">
+      <div class="body"><div class="top"><span class="name">Pollinations</span><span class="chip free">Free</span></div>
+      <div class="desc">GPT-OSS 20B</div><div class="host">pollinations.ai</div></div><span class="chev">›</span>
+    </a>
+    <a class="card" href="https://llm7.io" target="_blank" rel="noopener">
+      <div class="body"><div class="top"><span class="name">LLM7</span><span class="chip free">Free</span></div>
+      <div class="desc">GPT-OSS · Llama 3.1 · GLM</div><div class="host">llm7.io</div></div><span class="chev">›</span>
+    </a>
+    <a class="card" href="https://endpoints.ai.cloud.ovh.net" target="_blank" rel="noopener">
+      <div class="body"><div class="top"><span class="name">OVH AI Endpoints</span><span class="chip free">Free</span></div>
+      <div class="desc">Qwen3 · GPT-OSS · Llama 3.3</div><div class="host">endpoints.ai.cloud.ovh.net</div></div><span class="chev">›</span>
+    </a>
+    <a class="card" href="https://kilo.ai" target="_blank" rel="noopener">
+      <div class="body"><div class="top"><span class="name">Kilo Gateway</span><span class="chip free">Free</span></div>
+      <div class="desc">Routes <code style="font-family:var(--mono)">:free</code></div><div class="host">kilo.ai</div></div><span class="chev">›</span>
+    </a>
+    <a class="card" href="https://aihorde.net" target="_blank" rel="noopener">
+      <div class="body"><div class="top"><span class="name">AI Horde</span><span class="chip free">Free · key 0000000000</span></div>
+      <div class="desc">Llama · Gemma · Cydonia (chậm)</div><div class="host">aihorde.net</div></div><span class="chev">›</span>
+    </a>
+  </div>
+
+  <!-- NEEDS KEY -->
+  <h2>Cần đăng ký key <span class="n">9</span></h2>
+  <div class="grid">
+    <a class="card" href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener">
+      <div class="body"><div class="top"><span class="name">Mistral</span></div>
+      <div class="desc">Large 3 · Medium 3.5 · Codestral · Devstral</div><div class="host">console.mistral.ai/api-keys</div></div><span class="chev">›</span>
+    </a>
+    <a class="card" href="https://openrouter.ai/keys" target="_blank" rel="noopener">
+      <div class="body"><div class="top"><span class="name">OpenRouter</span></div>
+      <div class="desc">21 model free-tier</div><div class="host">openrouter.ai/keys</div></div><span class="chev">›</span>
+    </a>
+    <a class="card" href="https://github.com/settings/tokens" target="_blank" rel="noopener">
+      <div class="body"><div class="top"><span class="name">GitHub Models</span><span class="chip warn">Eval</span></div>
+      <div class="desc">GPT-4.1 · GPT-4o</div><div class="host">github.com/settings/tokens</div></div><span class="chev">›</span>
+    </a>
+    <a class="card" href="https://dash.cloudflare.com" target="_blank" rel="noopener">
+      <div class="body"><div class="top"><span class="name">Cloudflare Workers AI</span></div>
+      <div class="desc">Kimi K2 · GLM-4.7 · GPT-OSS · Granite 4</div><div class="host">dash.cloudflare.com → AI</div></div><span class="chev">›</span>
+    </a>
+    <a class="card" href="https://docs.z.ai" target="_blank" rel="noopener">
+      <div class="body"><div class="top"><span class="name">Z.ai (Zhipu)</span></div>
+      <div class="desc">GLM-4.5 · GLM-4.7 Flash</div><div class="host">docs.z.ai</div></div><span class="chev">›</span>
+    </a>
+    <a class="card" href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener">
+      <div class="body"><div class="top"><span class="name">HuggingFace</span></div>
+      <div class="desc">DeepSeek V4 · Kimi K2.6 · Qwen3</div><div class="host">huggingface.co/settings/tokens</div></div><span class="chev">›</span>
+    </a>
+    <a class="card" href="https://ollama.com" target="_blank" rel="noopener">
+      <div class="body"><div class="top"><span class="name">Ollama Cloud</span></div>
+      <div class="desc">GLM-4.7 · Kimi K2 · gpt-oss · Qwen3</div><div class="host">ollama.com</div></div><span class="chev">›</span>
+    </a>
+    <a class="card" href="https://build.nvidia.com" target="_blank" rel="noopener">
+      <div class="body"><div class="top"><span class="name">NVIDIA NIM</span><span class="chip warn">Eval · 40 RPM</span></div>
+      <div class="desc">NIM catalog</div><div class="host">build.nvidia.com</div></div><span class="chev">›</span>
+    </a>
+    <a class="card" href="https://dashboard.cohere.com/api-keys" target="_blank" rel="noopener">
+      <div class="body"><div class="top"><span class="name">Cohere</span><span class="chip warn">⚠ ToS cấm cá nhân</span></div>
+      <div class="desc">Command R+ · Command-A (trial)</div><div class="host">dashboard.cohere.com/api-keys</div></div><span class="chev">›</span>
+    </a>
+  </div>
+
+  <p class="note"><b>Sau khi lấy key:</b> mở Dashboard → trang <b>Keys</b> → chọn provider → dán key → <b>Save</b>. Thử ở trang <b>Playground</b> hoặc gọi <code style="font-family:var(--mono)">POST /v1/chat/completions</code> với <code style="font-family:var(--mono)">model: "auto"</code>.</p>
+
+  <footer>
+    <p><b>Lưu ý ToS:</b> 1 account / provider · không bán lại · không chia sẻ endpoint · không dùng free tier làm backend production. Dự án dành cho học tập & thử nghiệm cá nhân — không dùng cho production.</p>
+  </footer>
+</div>
+
+<script>
+  document.querySelectorAll('.copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var text = btn.getAttribute('data-copy');
+      var ico = btn.querySelector('.ico');
+      var done = function () {
+        btn.classList.add('ok'); ico.textContent = '✓ Đã copy';
+        setTimeout(function () { btn.classList.remove('ok'); ico.textContent = 'Copy'; }, 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, done);
+      } else {
+        var t = document.createElement('textarea');
+        t.value = text; document.body.appendChild(t); t.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(t); done();
+      }
+    });
+  });
+</script>
