@@ -85,11 +85,25 @@ export async function startMobileServer(opts: StartOptions): Promise<MobileServe
   const token = ensureSessionToken();
 
   const app = createApp(config);
-  // Unauthenticated loopback handshake: the WebView polls this on launch to
-  // discover the port is live and to pick up the local session token, so the
-  // dashboard is authenticated without a login screen and without depending on
-  // the nodejs-mobile JS bridge for anything but starting the runtime.
-  app.get('/api/mobile/handshake', (_req, res) => {
+  // Unauthenticated handshake: the WebView polls this on launch to discover the
+  // port is live and to pick up the local session token, so the dashboard is
+  // authenticated without a login screen and without depending on the
+  // nodejs-mobile JS bridge for anything but starting the runtime.
+  //
+  // It hands out an ADMIN session token, so it MUST stay loopback-only even
+  // though the server binds 0.0.0.0 for LAN /v1 access — otherwise any peer on
+  // the same network could lift admin access to the dashboard. The WebView
+  // reaches this over localhost, so the loopback check never blocks it; a LAN
+  // client hitting the phone's IP is rejected. We read the raw TCP peer
+  // (req.socket.remoteAddress), not req.ip, so a spoofed X-Forwarded-For can't
+  // masquerade as loopback.
+  app.get('/api/mobile/handshake', (req, res) => {
+    const addr = req.socket.remoteAddress ?? '';
+    const isLoopback = addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
+    if (!isLoopback) {
+      res.status(403).json({ error: 'handshake is loopback-only' });
+      return;
+    }
     res.json({ ok: true, token });
   });
 
