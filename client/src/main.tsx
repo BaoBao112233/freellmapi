@@ -25,7 +25,7 @@ if (isNative) {
   rootEl.innerHTML =
     '<div style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:system-ui,sans-serif;color:#888;background:#0b0b0c">' +
     '<div style="width:34px;height:34px;border:3px solid #333;border-top-color:#888;border-radius:50%;animation:fl-spin 0.9s linear infinite"></div>' +
-    '<div>Starting FreeLLMAPI…</div>' +
+    '<div>Starting Drawin AI…</div>' +
     '<style>@keyframes fl-spin{to{transform:rotate(360deg)}}</style></div>'
 }
 

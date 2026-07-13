@@ -1,7 +1,7 @@
 import { getDb } from '../db/index.js';
 import { resolveProvider } from '../providers/index.js';
 import { decrypt } from '../lib/crypto.js';
-import type { Platform, KeyStatus } from '@freellmapi/shared/types.js';
+import type { Platform, KeyStatus } from '@drawin/shared/types.js';
 import { inferQuotaPoolKey } from './provider-quota.js';
 import type { Scheduler } from '../lib/scheduler.js';
 

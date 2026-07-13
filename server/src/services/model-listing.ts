@@ -1,4 +1,4 @@
-import type { ModelListRow } from '@freellmapi/shared/types.js';
+import type { ModelListRow } from '@drawin/shared/types.js';
 import { getDb } from '../db/index.js';
 import { isUnifyEnabled, getModelGroups } from './model-groups.js';
 
@@ -54,7 +54,7 @@ export function buildModelListing(): ModelListing {
       return {
         id: g.canonicalId,
         name: g.groupLabel,
-        ownedBy: 'freellmapi',
+        ownedBy: 'drawin',
         available: infos.some(i => i.available === 1) ? 1 : 0,
         enabled: infos.some(i => i.enabled === 1) ? 1 : 0,
         contextWindow: ctxs.length ? Math.max(...ctxs) : null,

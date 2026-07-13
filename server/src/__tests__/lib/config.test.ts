@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { loadConfig } from '../../lib/config.js';
 
-const ENV_KEYS = ['PORT', 'HOST', 'FREEAPI_DB_PATH', 'DASHBOARD_ORIGINS', 'CLIENT_DIST', 'PROXY_RATE_LIMIT_RPM', 'NODE_ENV'];
+const ENV_KEYS = ['PORT', 'HOST', 'DRAWIN_DB_PATH', 'FREEAPI_DB_PATH', 'DASHBOARD_ORIGINS', 'CLIENT_DIST', 'PROXY_RATE_LIMIT_RPM', 'NODE_ENV'];
 
 afterEach(() => {
   ENV_KEYS.forEach(k => delete process.env[k]);
@@ -39,9 +39,20 @@ describe('loadConfig', () => {
     expect(cfg.clientDist).toBe('/opt/client/dist');
   });
 
-  it('reads FREEAPI_DB_PATH from env', () => {
+  it('reads DRAWIN_DB_PATH from env', () => {
+    process.env.DRAWIN_DB_PATH = '/data/drawin.db';
+    expect(loadConfig().dbPath).toBe('/data/drawin.db');
+  });
+
+  it('still reads the pre-rename FREEAPI_DB_PATH', () => {
     process.env.FREEAPI_DB_PATH = '/data/freeapi.db';
     expect(loadConfig().dbPath).toBe('/data/freeapi.db');
+  });
+
+  it('prefers DRAWIN_DB_PATH when both are set', () => {
+    process.env.DRAWIN_DB_PATH = '/data/drawin.db';
+    process.env.FREEAPI_DB_PATH = '/data/freeapi.db';
+    expect(loadConfig().dbPath).toBe('/data/drawin.db');
   });
 
   it('parses PROXY_RATE_LIMIT_RPM as a number', () => {

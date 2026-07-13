@@ -1,5 +1,5 @@
-appId: com.freellmapi.desktop
-productName: FreeLLMAPI
+appId: com.drawin.ai
+productName: Drawin AI
 directories:
   output: dist-electron
 files:

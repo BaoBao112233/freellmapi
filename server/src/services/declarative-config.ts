@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type Database from 'better-sqlite3';
 import { getDb } from '../db/index.js';
 import { encrypt } from '../lib/crypto.js';
+import { readEnvTrimmed } from '../lib/env-compat.js';
 import { resolveProvider } from '../providers/index.js';
 import { setCustomWeights, setRoutingStrategy } from './router.js';
 import {
@@ -110,10 +111,10 @@ interface NormalizedCustomModel {
 }
 
 function readConfigFromEnv(): { source: string; value: unknown } | null {
-  const inline = process.env.FREEAPI_CONFIG_JSON?.trim();
-  if (inline) return { source: 'FREEAPI_CONFIG_JSON', value: JSON.parse(inline) };
+  const inline = readEnvTrimmed('DRAWIN_CONFIG_JSON', 'FREEAPI_CONFIG_JSON');
+  if (inline) return { source: 'DRAWIN_CONFIG_JSON', value: JSON.parse(inline) };
 
-  const configPath = process.env.FREEAPI_CONFIG_PATH?.trim();
+  const configPath = readEnvTrimmed('DRAWIN_CONFIG_PATH', 'FREEAPI_CONFIG_PATH');
   if (configPath) return { source: configPath, value: JSON.parse(fs.readFileSync(configPath, 'utf8')) };
 
   return null;

@@ -1,15 +1,15 @@
 <div align="center">
 
-# FreeLLMAPI
+# Drawin AI
 
 **One OpenAI-compatible endpoint. Sixteen free LLM providers. ~1.7B tokens per month.**
 
 Aggregate the free tiers from Google, Groq, Cerebras, NVIDIA, Mistral, OpenRouter, GitHub Models, Cohere, Cloudflare, HuggingFace, Z.ai (Zhipu), Ollama, Kilo, Pollinations, LLM7, OVH AI Endpoints, and OpenCode Zen — plus custom OpenAI-compatible chat, embedding, image, and audio endpoints — behind a single `/v1` API. Keys are stored encrypted. A router picks the best available model for each request, falls over to the next provider when one is rate-limited, and tracks per-key usage so you stay under every free-tier cap.
 
-[![CI](https://github.com/tashfeenahmed/freellmapi/actions/workflows/ci.yml/badge.svg)](https://github.com/tashfeenahmed/freellmapi/actions/workflows/ci.yml)
+[![CI](https://github.com/BaoBao112233/freellmapi/actions/workflows/ci.yml/badge.svg)](https://github.com/BaoBao112233/freellmapi/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
-[![Docker image](https://img.shields.io/badge/ghcr.io-freellmapi-2496ED?logo=docker&logoColor=white)](https://github.com/tashfeenahmed/freellmapi/pkgs/container/freellmapi)
+[![Docker image](https://img.shields.io/badge/ghcr.io-drawin--ai-2496ED?logo=docker&logoColor=white)](https://github.com/BaoBao112233/freellmapi/pkgs/container/freellmapi)
 
 **[freellmapi.co](https://freellmapi.co)** — browse the live model catalog
 
@@ -43,7 +43,7 @@ Aggregate the free tiers from Google, Groq, Cerebras, NVIDIA, Mistral, OpenRoute
 
 Every serious AI lab now offers a free tier — a few million tokens a month, a few thousand requests a day. On its own each tier is a toy. Stacked together, they add up to roughly **1.7 billion tokens per month** of working inference capacity, across 100+ models from small-and-fast to reasonably capable.
 
-The problem is that stacking them by hand is painful: seventeen different SDKs, seventeen different rate limits, seventeen places a request can fail. FreeLLMAPI collapses that into one OpenAI-compatible endpoint. Point any OpenAI client library at your local server, and it routes transparently across whichever providers you've added keys for.
+The problem is that stacking them by hand is painful: seventeen different SDKs, seventeen different rate limits, seventeen places a request can fail. Drawin AI collapses that into one OpenAI-compatible endpoint. Point any OpenAI client library at your local server, and it routes transparently across whichever providers you've added keys for.
 
 ## Supported providers
 
@@ -86,7 +86,7 @@ Plus a **custom** provider — point chat, embedding, image, or audio models at 
 
 - **OpenAI-compatible** — `POST /v1/chat/completions` and `GET /v1/models` work with the official OpenAI SDKs and any OpenAI-compatible client (LangChain, LlamaIndex, Continue, Hermes, etc.). Just change `base_url`.
 - **Responses API** — `POST /v1/responses` (the wire format current Codex CLI versions require) is implemented as a translating shim over the same router, with full streaming events and tool calls.
-- **Editor autocomplete** — `POST /v1/completions` translates legacy prompt/suffix requests into the same router, so VS Code ghost-text clients such as Continue can use FreeLLMAPI for inline suggestions.
+- **Editor autocomplete** — `POST /v1/completions` translates legacy prompt/suffix requests into the same router, so VS Code ghost-text clients such as Continue can use Drawin AI for inline suggestions.
 - **Anthropic Messages API** — `POST /v1/messages` (plus `/v1/messages/count_tokens`) speaks Anthropic's wire format over the same router, so **Claude Code** and the official Anthropic SDKs run against your free pool. `GET /v1/models` is content-negotiated (Anthropic shape when the client sends `anthropic-version`, OpenAI shape otherwise), and Claude families (`opus` / `sonnet` / `haiku` / `default`) map to `auto` or a pinned model on the Keys page. See [Anthropic / Claude clients](#anthropic--claude-clients).
 - **Image generation & text-to-speech** — `POST /v1/images/generations` and `POST /v1/audio/speech` route across the providers that serve media models, including custom OpenAI-compatible media endpoints. Browse and toggle them on the dashboard's **Models → Image / Audio** tabs.
 - **Streaming and non-streaming** — Server-Sent Events for `stream: true`, JSON response otherwise. Every provider adapter implements both.
@@ -96,12 +96,12 @@ Plus a **custom** provider — point chat, embedding, image, or audio models at 
 - **Per-key rate tracking** — RPM, RPD, TPM, and TPD counters per `(platform, model, key)` so the router always picks a key that's under its caps.
 - **Sticky sessions** — Multi-turn conversations keep talking to the same model for 30 minutes to avoid the hallucination spike that comes from mid-conversation model switches.
 - **Encrypted key storage** — API keys are encrypted with AES-256-GCM before hitting SQLite; decryption happens in-memory just before a request.
-- **Unified API key** — Clients authenticate to your proxy with a single `freellmapi-…` bearer token. You never expose upstream provider keys to your apps.
+- **Unified API key** — Clients authenticate to your proxy with a single `drawin-…` bearer token. You never expose upstream provider keys to your apps.
 - **Dashboard login** — The admin UI and all `/api/*` routes are gated behind an email + password account (scrypt-hashed, session-token auth), set on first run. The `/v1` proxy keeps its own unified-key auth for apps.
 - **Health checks** — Periodic probes mark keys as `healthy`, `rate_limited`, `invalid`, or `error` so the router skips dead ones automatically.
 - **Admin dashboard** — React + Vite UI to manage keys, reorder the fallback chain, inspect analytics, and run prompts in a playground. Dark mode included.
 - **Analytics** — Per-request logging with latency, token counts, success rate, and per-provider breakdowns.
-- **Context handoff on model switch** — Optional. When a session falls over to a different model, injects one compact system message so the new model knows it is continuing an existing task. Disabled by default; enable with `FREELLMAPI_CONTEXT_HANDOFF=on_model_switch`. See [Context Handoff](#context-handoff).
+- **Context handoff on model switch** — Optional. When a session falls over to a different model, injects one compact system message so the new model knows it is continuing an existing task. Disabled by default; enable with `DRAWIN_CONTEXT_HANDOFF=on_model_switch`. See [Context Handoff](#context-handoff).
 - **Runs anywhere Node 20+ runs** — Windows, macOS, Linux servers, or a small ARM SBC (Raspberry Pi included). ~40 MB RSS at idle behind PM2 / systemd / whatever supervisor you prefer.
 
 ## Not yet supported
@@ -116,22 +116,14 @@ PRs that add any of these are very welcome. See [Contributing](#contributing).
 
 ## Quick start
 
-**One-liner** (Docker required — sets up `~/freellmapi`, generates an encryption key, pulls the image, and starts the container):
+On Windows, the easiest path is the desktop **[`.exe` installer from Releases](https://github.com/BaoBao112233/freellmapi/releases/latest)** (below); the Docker steps work in WSL or any bash shell.
 
-```bash
-curl -fsSL https://freellmapi.co/install.sh | bash
-```
-
-Prefer to read before you pipe to bash? [The script is here](https://freellmapi.co/install.sh). Re-running it is safe: your `.env` (and encryption key) is preserved and the container updates to `:latest`. Override the defaults with `FREELLMAPI_DIR`, `PORT`, or `HOST_BIND` env vars.
-
-On Windows, the easiest path is the desktop **[`.exe` installer from Releases](https://github.com/tashfeenahmed/freellmapi/releases/latest)** (below); the Docker steps work in WSL or any bash shell.
-
-**Or manually with Docker Compose.** It runs the API and dashboard together on port 3001 and persists SQLite in a named volume.
+**Docker Compose.** It runs the API and dashboard together on port 3001 and persists SQLite in a named volume.
 
 **Prerequisites:** Docker, Docker Compose, OpenSSL.
 
 ```bash
-git clone https://github.com/tashfeenahmed/freellmapi.git
+git clone https://github.com/BaoBao112233/freellmapi.git
 cd freellmapi
 
 # Generate an encryption key for at-rest key storage
@@ -156,7 +148,7 @@ Open http://localhost:3001, add your provider keys on the **Keys** page, reorder
 **Prerequisites:** Node.js 20+, npm.
 
 ```bash
-git clone https://github.com/tashfeenahmed/freellmapi.git
+git clone https://github.com/BaoBao112233/freellmapi.git
 cd freellmapi
 npm install
 cp .env.example .env
@@ -177,9 +169,9 @@ Open http://localhost:5173 (the Vite dev UI), add your provider keys on the **Ke
 
 ### Declarative startup config
 
-For repeatable Docker/server installs, FreeLLMAPI can apply a JSON config on
-every boot. Set `FREEAPI_CONFIG_PATH=/path/to/freellmapi.config.json` or put the
-same JSON in `FREEAPI_CONFIG_JSON`. The config is idempotent: existing keys,
+For repeatable Docker/server installs, Drawin AI can apply a JSON config on
+every boot. Set `DRAWIN_CONFIG_PATH=/path/to/drawin.config.json` or put the
+same JSON in `DRAWIN_CONFIG_JSON`. The config is idempotent: existing keys,
 custom providers, model edits, fallback rows, and routing settings are updated
 instead of duplicated.
 
@@ -222,10 +214,10 @@ node server/dist/index.js     # server + dashboard both served on :3001
 
 ## Docker
 
-FreeLLMAPI publishes a single production image that contains the Express server and the built React dashboard:
+Drawin AI publishes a single production image that contains the Express server and the built React dashboard:
 
 ```bash
-docker pull ghcr.io/tashfeenahmed/freellmapi:latest   # or pin a release, e.g. :v1.2.3
+docker pull ghcr.io/baobao112233/drawin-ai:latest   # or pin a release, e.g. :v1.2.3
 ```
 
 The image is multi-arch (`linux/amd64` + `linux/arm64`, so it runs on a Raspberry Pi). Published tags: `latest` (default branch), `v*.*.*` (git release tags), and `sha-<commit>`.
@@ -234,30 +226,37 @@ The included `docker-compose.yml` is the recommended install path:
 
 ```bash
 docker compose up -d
-docker compose logs -f freellmapi
+docker compose logs -f drawin
 ```
 
 By default the container's port is bound to `127.0.0.1` (localhost only). To reach the dashboard/API from another machine on your network, publish it on all interfaces with `HOST_BIND=0.0.0.0 docker compose up -d` — only on a trusted LAN, since the proxy is single-user.
 
-SQLite data is stored in the `freellmapi-data` volume at `/app/server/data`.
+SQLite data is stored in the `drawin-data` volume at `/app/server/data`.
 Keep the same `.env` `ENCRYPTION_KEY` and volume when upgrading, because
 provider keys are encrypted at rest. If your host only persists a specific
-directory, set `FREEAPI_DB_PATH=/that/path/freellmapi.db`.
+directory, set `DRAWIN_DB_PATH=/that/path/drawin.db`.
+
+> **Upgrading from FreeLLMAPI?** The Docker volume was renamed, so copy it once
+> before the first `up` — see [Upgrading from FreeLLMAPI](docker/README.md#upgrading-from-freellmapi).
+> Nothing else needs changing: your existing `.env` still works (the old
+> `FREEAPI_*` variable names are still read), and API keys already handed to your
+> clients (`freellmapi-…`) keep authenticating. Only newly generated keys carry
+> the `drawin-` prefix.
 
 On hosts with ephemeral disks, configure an encrypted backup target:
 
 ```env
-FREEAPI_DB_BACKUP_PATH=/app/server/data/freellmapi.db.backup
+DRAWIN_DB_BACKUP_PATH=/app/server/data/drawin.db.backup
 # or:
-FREEAPI_DB_BACKUP_URL=https://example.com/freellmapi.db.backup
-FREEAPI_DB_BACKUP_TOKEN=optional-bearer-token
-FREEAPI_DB_BACKUP_KEY=64-char-hex-backup-key
-FREEAPI_DB_BACKUP_INTERVAL_MS=300000
+DRAWIN_DB_BACKUP_URL=https://example.com/drawin.db.backup
+DRAWIN_DB_BACKUP_TOKEN=optional-bearer-token
+DRAWIN_DB_BACKUP_KEY=64-char-hex-backup-key
+DRAWIN_DB_BACKUP_INTERVAL_MS=300000
 ```
 
-When the database file is missing at startup, FreeLLMAPI restores the backup
+When the database file is missing at startup, Drawin AI restores the backup
 before migrations run. While the server is running it uploads a fresh encrypted
-backup periodically. If `FREEAPI_DB_BACKUP_KEY` is omitted, the app uses
+backup periodically. If `DRAWIN_DB_BACKUP_KEY` is omitted, the app uses
 `ENCRYPTION_KEY` for the backup envelope too.
 
 More Docker operations and examples live in [docker/README.md](./docker/README.md).
@@ -268,14 +267,14 @@ A native menu-bar app lives in [`desktop/`](./desktop): the entire router +
 dashboard running locally from your tray, with a glass popover showing live
 request stats.
 
-![FreeLLMAPI desktop app](repo-assets/desktop.png)
+![Drawin AI desktop app](repo-assets/desktop.png)
 
-**[Download from Releases](https://github.com/tashfeenahmed/freellmapi/releases/latest)** — the macOS `.dmg` and the Windows `.exe` installer are built and attached to every release by the [`desktop-release`](.github/workflows/desktop-release.yml) workflow. Or build it from this repo in a few minutes:
+**[Download from Releases](https://github.com/BaoBao112233/freellmapi/releases/latest)** — the macOS `.dmg` and the Windows `.exe` installer are built and attached to every release by the [`desktop-release`](.github/workflows/desktop-release.yml) workflow. Or build it from this repo in a few minutes:
 
 ```bash
 npm install
-npm run desktop:dist        # macOS  → desktop/dist-electron/FreeLLMAPI-…-arm64.dmg
-npm run desktop:dist:win    # Windows → "desktop/dist-electron/FreeLLMAPI Setup ….exe"
+npm run desktop:dist        # macOS  → desktop/dist-electron/Drawin AI-…-arm64.dmg
+npm run desktop:dist:win    # Windows → "desktop/dist-electron/Drawin AI Setup ….exe"
 ```
 
 > Locally built apps are unsigned, so Windows SmartScreen may warn on first run
@@ -333,7 +332,7 @@ from openai import OpenAI
 
 client = OpenAI(
     base_url="http://localhost:3001/v1",
-    api_key="freellmapi-your-unified-key",
+    api_key="drawin-your-unified-key",
 )
 
 resp = client.chat.completions.create(
@@ -348,7 +347,7 @@ print("Routed via:", resp.headers.get("x-routed-via"))
 
 ```bash
 curl http://localhost:3001/v1/chat/completions \
-  -H "Authorization: Bearer freellmapi-your-unified-key" \
+  -H "Authorization: Bearer drawin-your-unified-key" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "auto",
@@ -370,15 +369,15 @@ for chunk in stream:
 
 **VS Code ghost-text autocomplete (Continue)**
 
-FreeLLMAPI exposes `/v1/completions` for editor autocomplete clients that send legacy OpenAI prompt/suffix requests. Example Continue config:
+Drawin AI exposes `/v1/completions` for editor autocomplete clients that send legacy OpenAI prompt/suffix requests. Example Continue config:
 
 ```yaml
 models:
-  - name: FreeLLMAPI Autocomplete
+  - name: Drawin AI Autocomplete
     provider: openai
     model: auto
     apiBase: http://localhost:3001/v1
-    apiKey: freellmapi-your-unified-key
+    apiKey: drawin-your-unified-key
     useLegacyCompletionsEndpoint: true
     roles:
       - autocomplete
@@ -475,7 +474,7 @@ print(len(resp.data), "vectors of", len(resp.data[0].embedding), "dims")
 
 ```bash
 curl http://localhost:3001/v1/embeddings \
-  -H "Authorization: Bearer freellmapi-your-unified-key" \
+  -H "Authorization: Bearer drawin-your-unified-key" \
   -H "Content-Type: application/json" \
   -d '{"model": "auto", "input": "hello world"}'
 ```
@@ -499,11 +498,11 @@ The default family, per-provider toggles, and priorities live on the dashboard's
 
 ### Anthropic / Claude clients
 
-FreeLLMAPI also speaks Anthropic's Messages API, so anything built for Claude — including **Claude Code** and the official Anthropic SDKs — can run against your free pool. Point the client at your server's **origin** (Anthropic clients append `/v1/messages` themselves) and authenticate with your unified key. Both `x-api-key` and `Authorization: Bearer` are accepted.
+Drawin AI also speaks Anthropic's Messages API, so anything built for Claude — including **Claude Code** and the official Anthropic SDKs — can run against your free pool. Point the client at your server's **origin** (Anthropic clients append `/v1/messages` themselves) and authenticate with your unified key. Both `x-api-key` and `Authorization: Bearer` are accepted.
 
 ```bash
 curl http://localhost:3001/v1/messages \
-  -H "x-api-key: freellmapi-your-unified-key" \
+  -H "x-api-key: drawin-your-unified-key" \
   -H "anthropic-version: 2023-06-01" \
   -H "Content-Type: application/json" \
   -d '{
@@ -519,7 +518,7 @@ Claude model names map to your free pool on the **Keys → Anthropic** tab: each
 
 ```bash
 export ANTHROPIC_BASE_URL=http://localhost:3001
-export ANTHROPIC_AUTH_TOKEN=freellmapi-your-unified-key   # NOT ANTHROPIC_API_KEY
+export ANTHROPIC_AUTH_TOKEN=drawin-your-unified-key   # NOT ANTHROPIC_API_KEY
 claude
 ```
 
@@ -548,7 +547,7 @@ Request volume, success rate, tokens in and out, average latency, and per-provid
 ## How it works
 
 ```
-┌──────────────────┐   Bearer freellmapi-…   ┌─────────────────────────┐
+┌──────────────────┐     Bearer drawin-…     ┌─────────────────────────┐
 │  OpenAI SDK /    │ ──────────────────────▶ │  Express proxy (:3001)  │
 │  curl / any      │ ◀────────────────────── │  /v1/chat/completions   │
 │  OpenAI client   │      streamed tokens    └────────────┬────────────┘
@@ -577,10 +576,10 @@ Request volume, success rate, tokens in and out, average latency, and per-provid
 
 ## Context Handoff
 
-When FreeLLMAPI falls over to a different model mid-conversation (quota, rate limit, cooldown), the new model has no idea it is picking up someone else's task. **Context handoff** adds a single compact `system` message to the outbound request that tells the new model exactly that:
+When Drawin AI falls over to a different model mid-conversation (quota, rate limit, cooldown), the new model has no idea it is picking up someone else's task. **Context handoff** adds a single compact `system` message to the outbound request that tells the new model exactly that:
 
 ```
-FreeLLMAPI context handoff:
+Drawin AI context handoff:
 You are taking over an ongoing conversation from another model (groq:llama-3 → google:gemini-flash).
 Continue the user's task using the conversation context already provided in this request.
 Do not restart the task, re-ask already answered setup questions, or discard prior tool results.
@@ -594,7 +593,7 @@ Assistant: …
 **Enable it in `.env`:**
 
 ```env
-FREELLMAPI_CONTEXT_HANDOFF=on_model_switch
+DRAWIN_CONTEXT_HANDOFF=on_model_switch
 ```
 
 **How it works:**
@@ -605,7 +604,7 @@ FREELLMAPI_CONTEXT_HANDOFF=on_model_switch
 - Session key: `X-Session-Id` header if present, otherwise SHA-1 of the first user message (same as sticky sessions).
 - Storage is in-memory only. Nothing is written to disk or logged.
 
-> **Important:** Context Handoff improves continuity for conversations routed through FreeLLMAPI. It cannot recover provider-internal hidden state or messages that were never sent to the proxy.
+> **Important:** Context Handoff improves continuity for conversations routed through Drawin AI. It cannot recover provider-internal hidden state or messages that were never sent to the proxy.
 
 ## Limitations
 
@@ -741,11 +740,11 @@ Removed since the April 2026 review: Hugging Face, Moonshot, and MiniMax direct 
 
 ## Disclaimer
 
-**This project is for personal experimentation and learning, not production.** Free tiers exist so developers can prototype against them; they aren't a stable, supported inference substrate and shouldn't be treated as one. If you build something real on top of FreeLLMAPI, swap in a paid API before you ship. Your relationship with each upstream provider is governed by the terms you accepted when you created your account — those terms still apply when the traffic is proxied through this project, and you're responsible for complying with them.
+**This project is for personal experimentation and learning, not production.** Free tiers exist so developers can prototype against them; they aren't a stable, supported inference substrate and shouldn't be treated as one. If you build something real on top of Drawin AI, swap in a paid API before you ship. Your relationship with each upstream provider is governed by the terms you accepted when you created your account — those terms still apply when the traffic is proxied through this project, and you're responsible for complying with them.
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/chart?repos=tashfeenahmed/freellmapi&type=date&legend=top-left)](https://www.star-history.com/?repos=tashfeenahmed%2Ffreellmapi&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/chart?repos=BaoBao112233/freellmapi&type=date&legend=top-left)](https://www.star-history.com/?repos=BaoBao112233%2Ffreellmapi&type=date&legend=top-left)
 
 ## License
 

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useI18n } from '@/i18n'
+import { DrawinMark } from '@/components/drawin-mark'
 
 interface AuthStatus {
   needsSetup: boolean
@@ -50,8 +51,8 @@ function AuthForm({ mode, onAuthed }: { mode: 'setup' | 'login'; onAuthed: () =>
   return (
     <Centered>
       <div className="mb-6 flex items-center gap-2">
-        <span className="inline-block size-2 rounded-full bg-foreground" />
-        <span className="font-semibold tracking-tight text-sm">FreeLLMAPI</span>
+        <DrawinMark className="size-4" />
+        <span className="font-semibold tracking-tight text-sm">Drawin AI</span>
       </div>
       <div className="rounded-3xl border bg-card p-6">
         <h1 className="text-base font-medium">{isSetup ? t('auth.createYourAccount') : t('auth.signIn')}</h1>

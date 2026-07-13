@@ -4,11 +4,14 @@
 // from bundled assets while the API runs on an on-device Node server at
 // http://localhost:<port>, so the mobile bootstrap sets an absolute origin here
 // and all API calls are prefixed with it.
-const ORIGIN_KEY = 'freellmapi_api_origin';
+const ORIGIN_KEY = 'drawin_api_origin';
+// Pre-rename key. An app updated in place still has the origin under the old
+// name, and re-reading it here saves the mobile shell a bootstrap round trip.
+const LEGACY_ORIGIN_KEY = 'freellmapi_api_origin';
 
 let apiOrigin = '';
 try {
-  apiOrigin = localStorage.getItem(ORIGIN_KEY) ?? '';
+  apiOrigin = localStorage.getItem(ORIGIN_KEY) ?? localStorage.getItem(LEGACY_ORIGIN_KEY) ?? '';
 } catch {
   /* localStorage unavailable — keep relative */
 }

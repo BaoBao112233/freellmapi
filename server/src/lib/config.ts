@@ -1,3 +1,5 @@
+import { readEnvTrimmed } from './env-compat.js';
+
 const DEFAULT_RPM = 120;
 
 function parseRateLimitRpm(): number {
@@ -26,7 +28,7 @@ export function loadConfig(): Config {
     // and IPv6 (e.g. IPv6-enabled Docker networks — #180). Hosts with IPv6
     // disabled fall back to IPv4-only below; HOST overrides the default outright.
     host: process.env.HOST ?? '::',
-    dbPath: process.env.FREEAPI_DB_PATH?.trim() || null,
+    dbPath: readEnvTrimmed('DRAWIN_DB_PATH', 'FREEAPI_DB_PATH') || null,
     dashboardOrigins: (process.env.DASHBOARD_ORIGINS ?? '')
       .split(',')
       .map(s => s.trim())

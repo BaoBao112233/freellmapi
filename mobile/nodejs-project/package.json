@@ -1,8 +1,8 @@
 {
-  "name": "freellmapi-node",
+  "name": "drawin-node",
   "version": "0.1.0",
   "private": true,
-  "description": "FreeLLMAPI server bundle executed by nodejs-mobile on the device.",
+  "description": "Drawin AI server bundle executed by nodejs-mobile on the device.",
   "main": "main.js",
   "dependencies": {
     "node-sqlite3-wasm": "^0.8.59"

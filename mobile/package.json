@@ -1,7 +1,7 @@
 {
-  "name": "freellmapi-mobile",
+  "name": "drawin-mobile",
   "version": "0.1.0",
-  "description": "FreeLLMAPI Android app — the full router (Node server + dashboard) running standalone on-device via nodejs-mobile.",
+  "description": "Drawin AI Android app \u2014 the full router (Node server + dashboard) running standalone on-device via nodejs-mobile.",
   "private": true,
   "type": "module",
   "scripts": {

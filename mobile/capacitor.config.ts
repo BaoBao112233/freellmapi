@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'co.freellmapi.app',
-  appName: 'FreeLLMAPI',
+  appId: 'co.drawin.app',
+  appName: 'Drawin AI',
   // The built dashboard is staged here by scripts/stage-client.mjs.
   webDir: 'www',
   // The dashboard talks to the on-device Node server over http://localhost:<port>.

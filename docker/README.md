@@ -1,6 +1,6 @@
 # Docker Guide
 
-Docker Compose is the recommended way to run FreeLLMAPI for personal use. The container serves the Express API and the built React dashboard from one process on port 3001, with SQLite persisted in a named volume.
+Docker Compose is the recommended way to run Drawin AI for personal use. The container serves the Express API and the built React dashboard from one process on port 3001, with SQLite persisted in a named volume.
 
 ## Prerequisites
 
@@ -23,17 +23,17 @@ Start the app:
 docker compose up -d
 ```
 
-Open http://localhost:3001, add provider keys on the **Keys** page, then use the generated `freellmapi-...` key with any OpenAI-compatible client.
+Open http://localhost:3001, add provider keys on the **Keys** page, then use the generated `drawin-...` key with any OpenAI-compatible client.
 
 ## Example API Call
 
 ```bash
 curl http://localhost:3001/v1/chat/completions \
-  -H "Authorization: Bearer freellmapi-your-unified-key" \
+  -H "Authorization: Bearer drawin-your-unified-key" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "auto",
-    "messages": [{"role": "user", "content": "Say hello from FreeLLMAPI."}]
+    "messages": [{"role": "user", "content": "Say hello from Drawin AI."}]
   }'
 ```
 
@@ -48,7 +48,7 @@ docker compose ps
 Tail logs:
 
 ```bash
-docker compose logs -f freellmapi
+docker compose logs -f drawin
 ```
 
 Stop the app:
@@ -76,17 +76,37 @@ docker compose up -d --build
 | --- | --- | --- | --- |
 | `ENCRYPTION_KEY` | Yes | None | 64-character hex key used to encrypt provider API keys at rest. Generate it once and keep it stable. |
 | `PORT` | No | `3001` | Host port exposed by Docker Compose. The container listens on port 3001. |
-| `FREEAPI_DB_PATH` | No | `/app/server/data/freellmapi.db` | SQLite file path. Set this when your host only persists one mounted directory. |
-| `FREEAPI_DB_BACKUP_PATH` | No | None | Local encrypted backup file. Restored on startup if the DB file is missing, then refreshed while the app runs. |
-| `FREEAPI_DB_BACKUP_URL` | No | None | HTTP(S) encrypted backup target. Startup uses `GET`; periodic backups use `PUT`. |
-| `FREEAPI_DB_BACKUP_TOKEN` | No | None | Optional bearer token for `FREEAPI_DB_BACKUP_URL`. |
-| `FREEAPI_DB_BACKUP_KEY` | No | `ENCRYPTION_KEY` | 64-character hex key for backup encryption. Use a separate stable key if possible. |
-| `FREEAPI_CONFIG_PATH` | No | None | JSON config file applied idempotently after migrations on every boot. |
-| `FREEAPI_CONFIG_JSON` | No | None | Inline JSON config. Takes precedence over `FREEAPI_CONFIG_PATH`. |
+| `DRAWIN_DB_PATH` | No | `/app/server/data/drawin.db` | SQLite file path. Set this when your host only persists one mounted directory. |
+| `DRAWIN_DB_BACKUP_PATH` | No | None | Local encrypted backup file. Restored on startup if the DB file is missing, then refreshed while the app runs. |
+| `DRAWIN_DB_BACKUP_URL` | No | None | HTTP(S) encrypted backup target. Startup uses `GET`; periodic backups use `PUT`. |
+| `DRAWIN_DB_BACKUP_TOKEN` | No | None | Optional bearer token for `DRAWIN_DB_BACKUP_URL`. |
+| `DRAWIN_DB_BACKUP_KEY` | No | `ENCRYPTION_KEY` | 64-character hex key for backup encryption. Use a separate stable key if possible. |
+| `DRAWIN_CONFIG_PATH` | No | None | JSON config file applied idempotently after migrations on every boot. |
+| `DRAWIN_CONFIG_JSON` | No | None | Inline JSON config. Takes precedence over `DRAWIN_CONFIG_PATH`. |
 
-The `freellmapi-data` volume stores SQLite data at `/app/server/data`. Keep the same volume and `ENCRYPTION_KEY` when upgrading, otherwise existing encrypted provider keys cannot be decrypted.
+The `drawin-data` volume stores SQLite data at `/app/server/data`. Keep the same volume and `ENCRYPTION_KEY` when upgrading, otherwise existing encrypted provider keys cannot be decrypted.
 
-Example `freellmapi.config.json`:
+### Upgrading from FreeLLMAPI
+
+The rename moved the named volume from `freellmapi-data` to `drawin-data`. Docker
+will not carry the data across on its own — a plain `docker compose up` would come
+up against an empty volume — so copy it once, before starting the new stack:
+
+```bash
+docker compose down
+docker volume create drawin-data
+docker run --rm -v freellmapi-data:/from -v drawin-data:/to alpine \
+  sh -c 'cd /from && cp -a . /to'
+docker compose up -d
+```
+
+Everything else survives untouched: your `.env` keeps working (the old `FREEAPI_*`
+names are still read), and API keys already issued to your clients — the
+`freellmapi-…` ones — keep authenticating. Only newly generated keys use the
+`drawin-` prefix. The old volume is left in place; remove it with
+`docker volume rm freellmapi-data` once you have confirmed the new stack works.
+
+Example `drawin.config.json`:
 
 ```json
 {
@@ -111,7 +131,7 @@ Example `freellmapi.config.json`:
 Images are published to GitHub Container Registry:
 
 ```bash
-docker pull ghcr.io/tashfeenahmed/freellmapi:latest
+docker pull ghcr.io/baobao112233/drawin-ai:latest
 ```
 
 The Docker workflow builds pull requests without pushing. After this repository receives the workflow on `main`, pushes to `main` and version tags publish images to GHCR automatically.

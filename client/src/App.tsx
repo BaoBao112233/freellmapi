@@ -32,6 +32,7 @@ import MediaDetailPage from '@/pages/MediaDetailPage'
 import EmbeddingDetailPage from '@/pages/EmbeddingDetailPage'
 import AnalyticsPage from '@/pages/AnalyticsPage'
 import PremiumPage from '@/pages/PremiumPage'
+import { DrawinMark } from '@/components/drawin-mark'
 
 const queryClient = new QueryClient()
 
@@ -90,8 +91,8 @@ function useDarkMode() {
 function Brand() {
   return (
     <Link to="/" className="flex items-center gap-2 transition-opacity hover:opacity-70">
-      <span className="inline-block size-2 rounded-full bg-foreground" />
-      <span className="font-semibold tracking-tight text-sm">FreeLLMAPI</span>
+      <DrawinMark className="size-4" />
+      <span className="font-semibold tracking-tight text-sm">Drawin AI</span>
     </Link>
   )
 }
@@ -99,7 +100,7 @@ function Brand() {
 // True when the dashboard runs inside the desktop shell (Electron preload
 // sets this). The navbar then doubles as the window title bar: draggable,
 // padded for the macOS traffic lights, and without the web-only Sign out.
-const isDesktopApp = typeof window !== 'undefined' && (window as any).__FREEAPI_DESKTOP__ === true
+const isDesktopApp = typeof window !== 'undefined' && (window as any).__DRAWIN_DESKTOP__ === true
 
 // The preload's own early classList.add can be lost (it may run before this
 // document exists), so the client claims the class itself at module load —

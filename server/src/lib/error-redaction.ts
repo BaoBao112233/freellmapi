@@ -5,7 +5,9 @@ const REDACTIONS: Array<[RegExp, string]> = [
   [/\b(api[_-]?key|access[_-]?token|token|secret|authorization)(\s*[:=]\s*)(["']?)[^"',\s}\]]+/gi, '$1$2$3[redacted]'],
   [/\bsk-[A-Za-z0-9_-]{8,}\b/g, '[redacted-key]'],
   [/\bgsk_[A-Za-z0-9_-]{8,}\b/g, '[redacted-key]'],
-  [/\bfreellmapi-[A-Za-z0-9_-]{8,}\b/g, '[redacted-key]'],
+  // `freellmapi-` is the pre-rename prefix: keys issued before Drawin AI stay
+  // valid, so they must stay redactable.
+  [/\b(?:drawin|freellmapi)-[A-Za-z0-9_-]{8,}\b/g, '[redacted-key]'],
   [/\bAIza[0-9A-Za-z_-]{20,}\b/g, '[redacted-key]'],
   [/\b[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b/g, '[redacted-token]'],
   [/\bhttps?:\/\/[^\s"'<>)]*/gi, '[redacted-url]'],

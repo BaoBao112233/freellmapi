@@ -3,7 +3,7 @@ import type DatabaseType from 'better-sqlite3';
 import { getDb, getSetting, setSetting } from '../db/index.js';
 import { hasProvider } from '../providers/index.js';
 import { MEDIA_PLATFORMS } from './media.js';
-import type { Platform } from '@freellmapi/shared/types.js';
+import type { Platform } from '@drawin/shared/types.js';
 import type { Scheduler } from '../lib/scheduler.js';
 import {
   applyAllModelOverrides,

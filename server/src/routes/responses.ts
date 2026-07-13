@@ -8,7 +8,7 @@ import type {
   ChatToolDefinition,
   ChatToolChoice,
   Platform,
-} from '@freellmapi/shared/types.js';
+} from '@drawin/shared/types.js';
 import { routeRequest, recordRateLimitHit, recordSuccess, hasEnabledToolsModel, type RouteResult } from '../services/router.js';
 import { recordRequest, recordTokens, setCooldown, getCooldownDurationForLimit, PAYMENT_REQUIRED_COOLDOWN_MS, learnLimitFromError } from '../services/ratelimit.js';
 import { getUnifiedApiKey } from '../db/index.js';

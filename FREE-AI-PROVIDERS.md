@@ -1,6 +1,6 @@
-# FreeLLMAPI — Hướng dẫn lấy API key AI miễn phí
+# Drawin AI — Hướng dẫn lấy API key AI miễn phí
 
-Tổng hợp link đăng ký lấy API key miễn phí từ các nhà cung cấp để bỏ vào FreeLLMAPI.
+Tổng hợp link đăng ký lấy API key miễn phí từ các nhà cung cấp để bỏ vào Drawin AI.
 
 ---
 
@@ -16,7 +16,7 @@ Tổng hợp link đăng ký lấy API key miễn phí từ các nhà cung cấp
 **Unified API key** (key mà app/SDK của bạn dùng để gọi proxy — không phải để đăng nhập dashboard):
 
 ```
-freellmapi-e5b28380b75aa6640d0758046cf2f8a802d0596645aecfa5
+drawin-e5b28380b75aa6640d0758046cf2f8a802d0596645aecfa5
 ```
 
 ---
@@ -81,7 +81,7 @@ Lấy **3 key này** là đủ mạnh và dễ nhất (đăng ký free ~2 phút,
 
 ```bash
 curl http://localhost:3001/v1/chat/completions \
-  -H "Authorization: Bearer freellmapi-e5b28380b75aa6640d0758046cf2f8a802d0596645aecfa5" \
+  -H "Authorization: Bearer drawin-e5b28380b75aa6640d0758046cf2f8a802d0596645aecfa5" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "auto",
@@ -94,7 +94,7 @@ curl http://localhost:3001/v1/chat/completions \
 ## 🖥️ Cách chạy lại hệ thống
 
 ```bash
-cd d:\Projects\freellmapi
+cd d:\Projects\drawin-ai
 npm run dev        # server :3001 + dashboard :5173 (dev, có hot-reload)
 ```
 

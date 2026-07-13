@@ -1,7 +1,11 @@
-import type { ChatMessage } from '@freellmapi/shared/types.js';
+import type { ChatMessage } from '@drawin/shared/types.js';
 import { contentToString } from '../lib/content.js';
+import { readEnvTrimmed } from '../lib/env-compat.js';
 
 export type ContextHandoffMode = 'off' | 'on_model_switch';
+
+const HANDOFF_MARKER = 'Drawin AI context handoff:';
+const LEGACY_HANDOFF_MARKER = 'FreeLLMAPI context handoff:';
 
 type TrimmedMessage = { role: string; content: string };
 
@@ -25,7 +29,7 @@ export const HANDOFF_MAX_TOKENS = Math.ceil((MAX_HANDOFF_CHARS + 400) / 4);
 const store = new Map<string, SessionContext>();
 
 export function getContextHandoffMode(): ContextHandoffMode {
-  const raw = process.env.FREELLMAPI_CONTEXT_HANDOFF?.trim().toLowerCase();
+  const raw = readEnvTrimmed('DRAWIN_CONTEXT_HANDOFF', 'FREELLMAPI_CONTEXT_HANDOFF').toLowerCase();
   return raw === 'on_model_switch' ? 'on_model_switch' : 'off';
 }
 
@@ -123,17 +127,19 @@ export function maybeInjectContextHandoff(params: {
   }
 
   // Skip if a handoff message is already present — handles both plain strings
-  // and the array-content format that OpenCode/Continue.dev send.
+  // and the array-content format that OpenCode/Continue.dev send. A conversation
+  // that started before the Drawin AI rename still carries the old marker, so
+  // match it too rather than injecting a second handoff over the first.
   const alreadyPresent = messages.some(m => {
     if (m.role !== 'system') return false;
     const text = typeof m.content === 'string' ? m.content : contentToString(m.content);
-    return text.startsWith('FreeLLMAPI context handoff:');
+    return text.startsWith(HANDOFF_MARKER) || text.startsWith(LEGACY_HANDOFF_MARKER);
   });
   if (alreadyPresent) return { messages, injected: false, injectedTokens: 0 };
 
   const summary = buildSummary(ctx.recentMessages);
   const handoffContent = [
-    'FreeLLMAPI context handoff:',
+    HANDOFF_MARKER,
     `You are taking over an ongoing conversation from another model (${ctx.lastModelKey} → ${selectedModelKey}).`,
     'Continue the user\'s task using the conversation context already provided in this request.',
     'Do not restart the task, re-ask already answered setup questions, or discard prior tool results.',

@@ -1,21 +1,27 @@
 import { getApiOrigin } from './runtime';
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
-const TOKEN_KEY = 'freellmapi_dashboard_token';
+const TOKEN_KEY = 'drawin_dashboard_token';
+// Pre-rename key. Reading it keeps an already-signed-in browser signed in across
+// the upgrade; clearToken drops both so signing out is not half-done.
+const LEGACY_TOKEN_KEY = 'freellmapi_dashboard_token';
 
 // Dashboard session token (#35). Stored in localStorage; sent as a Bearer on
 // every /api request and cleared on a 401.
 export function getToken(): string | null {
-  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+  try { return localStorage.getItem(TOKEN_KEY) ?? localStorage.getItem(LEGACY_TOKEN_KEY); } catch { return null; }
 }
 export function setToken(token: string): void {
   try { localStorage.setItem(TOKEN_KEY, token); } catch { /* ignore */ }
 }
 export function clearToken(): void {
-  try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+  } catch { /* ignore */ }
 }
 
-export const UNAUTHORIZED_EVENT = 'freellmapi:unauthorized';
+export const UNAUTHORIZED_EVENT = 'drawin:unauthorized';
 
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getToken();

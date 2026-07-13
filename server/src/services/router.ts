@@ -10,7 +10,7 @@ import {
 import { parseBudget } from '../lib/budget.js';
 import { isUnifyEnabled, getModelGroups, resolveRequestedIdToMembers } from './model-groups.js';
 import type { BaseProvider } from '../providers/base.js';
-import type { Platform } from '@freellmapi/shared/types.js';
+import type { Platform } from '@drawin/shared/types.js';
 import type { Database } from 'better-sqlite3';
 
 class RouteError extends Error {

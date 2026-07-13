@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { app, dialog, ipcMain, clipboard, nativeTheme, shell } from 'electron';
@@ -14,8 +15,21 @@ const DEFAULT_PORT = 31415;
 // Lean posture: one instance, menu-bar only. GPU stays ON — vibrancy
 // (the popover/dashboard glass) needs GPU compositing; with hardware
 // acceleration disabled, transparent windows render an opaque white.
-app.setName('FreeLLMAPI');
-app.setPath('userData', path.join(app.getPath('appData'), 'FreeLLMAPI'));
+app.setName('Drawin AI');
+
+// The app stored its config and database under a FreeLLMAPI/ userData directory
+// before the rename. Carry it over on first launch, otherwise an upgraded
+// install silently comes up as a fresh one — no keys, no database.
+const userData = path.join(app.getPath('appData'), 'Drawin AI');
+const legacyUserData = path.join(app.getPath('appData'), 'FreeLLMAPI');
+if (!fs.existsSync(userData) && fs.existsSync(legacyUserData)) {
+  try {
+    fs.renameSync(legacyUserData, userData);
+  } catch (err) {
+    console.error('[desktop] could not migrate the legacy user data directory:', err);
+  }
+}
+app.setPath('userData', userData);
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -27,14 +41,14 @@ if (!app.requestSingleInstanceLock()) {
   // dashboard has ever reported, fall back to the system appearance —
   // matching the dashboard's own prefers-color-scheme default.
   let theme: 'dark' | 'light' =
-    (process.env.FREEAPI_THEME as 'dark' | 'light' | undefined) // dev-only screenshot override
+    ((process.env.DRAWIN_THEME ?? process.env.FREEAPI_THEME) as 'dark' | 'light' | undefined) // dev-only screenshot override
     ?? loadConfig().theme
     ?? (nativeTheme.shouldUseDarkColors ? 'dark' : 'light');
   nativeTheme.themeSource = theme;
   // The dashboard also owns the language (its ⋯-menu selector); the native tray
   // menu and popover follow via the same mirror-and-persist pattern as the theme.
   let locale: NativeLocale = normalizeLocale(
-    (process.env.FREEAPI_LOCALE as string | undefined) ?? loadConfig().locale,
+    ((process.env.DRAWIN_LOCALE ?? process.env.FREEAPI_LOCALE) as string | undefined) ?? loadConfig().locale,
   );
 
   app.on('second-instance', () => {
@@ -72,7 +86,7 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   // ── popover IPC ──────────────────────────────────────────────────────────
-  ipcMain.handle('freeapi:snapshot', () => {
+  ipcMain.handle('drawin:snapshot', () => {
     const s = todayStats();
     return {
       port: resolvedPort,
@@ -89,7 +103,7 @@ if (!app.requestSingleInstanceLock()) {
       strings: nativeStrings(locale),
     };
   });
-  ipcMain.on('freeapi:theme-changed', async (_e, next: 'dark' | 'light') => {
+  ipcMain.on('drawin:theme-changed', async (_e, next: 'dark' | 'light') => {
     if (next !== 'dark' && next !== 'light') return;
     if (next === theme) return;
     theme = next;
@@ -97,9 +111,9 @@ if (!app.requestSingleInstanceLock()) {
     // Flips the vibrancy materials (popover glass + dashboard backdrop).
     nativeTheme.themeSource = theme;
     const { getPopoverWindow } = await import('./popover.js');
-    getPopoverWindow()?.webContents.send('freeapi:refresh');
+    getPopoverWindow()?.webContents.send('drawin:refresh');
   });
-  ipcMain.on('freeapi:locale-changed', async (_e, raw: string) => {
+  ipcMain.on('drawin:locale-changed', async (_e, raw: string) => {
     const next = normalizeLocale(raw);
     if (next === locale) return;
     locale = next;
@@ -107,23 +121,29 @@ if (!app.requestSingleInstanceLock()) {
     refreshTrayLocale(locale);
     // Re-label the popover if it's open (snapshot now carries the new strings).
     const { getPopoverWindow } = await import('./popover.js');
-    getPopoverWindow()?.webContents.send('freeapi:refresh');
+    getPopoverWindow()?.webContents.send('drawin:refresh');
   });
-  ipcMain.handle('freeapi:open-dashboard', () => openDashboard(resolvedPort, sessionToken));
-  ipcMain.handle('freeapi:copy-base-url', () => clipboard.writeText(`http://127.0.0.1:${resolvedPort}/v1`));
-  ipcMain.handle('freeapi:copy-api-key', () => clipboard.writeText(getUnifiedApiKey()));
-  ipcMain.handle('freeapi:set-login-item', (_e, open: boolean) => app.setLoginItemSettings({ openAtLogin: open }));
-  ipcMain.handle('freeapi:quit', () => app.quit());
+  ipcMain.handle('drawin:open-dashboard', () => openDashboard(resolvedPort, sessionToken));
+  ipcMain.handle('drawin:copy-base-url', () => clipboard.writeText(`http://127.0.0.1:${resolvedPort}/v1`));
+  ipcMain.handle('drawin:copy-api-key', () => clipboard.writeText(getUnifiedApiKey()));
+  ipcMain.handle('drawin:set-login-item', (_e, open: boolean) => app.setLoginItemSettings({ openAtLogin: open }));
+  ipcMain.handle('drawin:quit', () => app.quit());
 
   app.whenReady().then(async () => {
     if (process.platform === 'darwin') app.dock?.hide();
 
     const cfg = loadConfig();
-    const dbPath = path.join(app.getPath('userData'), 'freeapi.db');
+    // freeapi.db is the pre-rename filename. The migration above moves the whole
+    // userData directory, so an upgraded install still has its database under the
+    // old name — keep using it rather than starting an empty drawin.db beside it.
+    const legacyDbPath = path.join(app.getPath('userData'), 'freeapi.db');
+    const dbPath = fs.existsSync(legacyDbPath)
+      ? legacyDbPath
+      : path.join(app.getPath('userData'), 'drawin.db');
     // Packaged: client/dist ships in extraResources (Resources/client-dist).
     // Dev: use this repo's own client/dist (desktop/ lives in the monorepo;
-    // FREEAPI_REPO can still point at a different checkout if ever needed).
-    const repoRoot = process.env.FREEAPI_REPO ?? path.resolve(__dirname, '../..');
+    // DRAWIN_REPO can still point at a different checkout if ever needed).
+    const repoRoot = process.env.DRAWIN_REPO ?? process.env.FREEAPI_REPO ?? path.resolve(__dirname, '../..');
     const clientDist = app.isPackaged
       ? path.join(process.resourcesPath, 'client-dist')
       : path.join(repoRoot, 'client/dist');
@@ -139,26 +159,26 @@ if (!app.requestSingleInstanceLock()) {
       saveConfig({ ...cfg, port });
       sessionToken = ensureSessionToken();
       const tray = buildTray(port, sessionToken, () => locale);
-      console.log(`[desktop] FreeLLMAPI running on http://127.0.0.1:${port}`);
+      console.log(`[desktop] Drawin AI running on http://127.0.0.1:${port}`);
 
-      // Dev-only UI verification: FREEAPI_SHOT=1 opens the popover and the
-      // dashboard, captures both to /tmp, and quits. FREEAPI_SHOT=hold opens
+      // Dev-only UI verification: DRAWIN_SHOT=1 opens the popover and the
+      // dashboard, captures both to /tmp, and quits. DRAWIN_SHOT=hold opens
       // the popover and keeps it pinned (blur ignored) so a real screen
       // capture can include the compositor's vibrancy. Never set when packaged.
-      if (process.env.FREEAPI_SHOT && !app.isPackaged) {
+      if ((process.env.DRAWIN_SHOT ?? process.env.FREEAPI_SHOT) && !app.isPackaged) {
         const fs = await import('node:fs');
         const { togglePopover, getPopoverWindow } = await import('./popover.js');
         const { getDashboardWindow } = await import('./window.js');
         const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
         await sleep(800);
         togglePopover(tray);
-        if (process.env.FREEAPI_SHOT === 'hold') {
+        if ((process.env.DRAWIN_SHOT ?? process.env.FREEAPI_SHOT) === 'hold') {
           const pop = getPopoverWindow();
           pop?.removeAllListeners('blur'); // stay open unfocused
-          if (pop) fs.writeFileSync('/tmp/freeapi-popover-bounds.json', JSON.stringify(pop.getBounds()));
-          // FREEAPI_THEME forces a theme for captures — skip the dashboard
+          if (pop) fs.writeFileSync('/tmp/drawin-popover-bounds.json', JSON.stringify(pop.getBounds()));
+          // DRAWIN_THEME forces a theme for captures — skip the dashboard
           // then, or its theme report would immediately override the override.
-          if (!process.env.FREEAPI_THEME) {
+          if (!(process.env.DRAWIN_THEME ?? process.env.FREEAPI_THEME)) {
             openDashboard(port, sessionToken);
             await sleep(2500);
             const dashWin = getDashboardWindow();
@@ -166,23 +186,23 @@ if (!app.requestSingleInstanceLock()) {
               dashWin.show();
               dashWin.focus();
               dashWin.moveTop();
-              fs.writeFileSync('/tmp/freeapi-dashboard-bounds.json', JSON.stringify(dashWin.getBounds()));
+              fs.writeFileSync('/tmp/drawin-dashboard-bounds.json', JSON.stringify(dashWin.getBounds()));
             }
           }
           return;
         }
         await sleep(1500);
         const pop = await getPopoverWindow()?.webContents.capturePage();
-        if (pop) fs.writeFileSync('/tmp/freeapi-popover.png', pop.toPNG());
+        if (pop) fs.writeFileSync('/tmp/drawin-popover.png', pop.toPNG());
         openDashboard(port, sessionToken);
         await sleep(3000);
         const dash = await getDashboardWindow()?.webContents.capturePage();
-        if (dash) fs.writeFileSync('/tmp/freeapi-dashboard.png', dash.toPNG());
+        if (dash) fs.writeFileSync('/tmp/drawin-dashboard.png', dash.toPNG());
         app.quit();
       }
     } catch (err: any) {
       dialog.showErrorBox(
-        'FreeLLMAPI failed to start',
+        'Drawin AI failed to start',
         err?.message ?? String(err),
       );
       app.quit();

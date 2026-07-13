@@ -5,9 +5,15 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { runMigrationsSync } from './migrate/runner.js';
 import { initEncryptionKey, isEncryptionKeyInitialized } from '../lib/crypto.js';
+import { readEnv } from '../lib/env-compat.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.resolve(__dirname, '../../data/freeapi.db');
+const DATA_DIR = path.resolve(__dirname, '../../data');
+const DB_PATH = path.join(DATA_DIR, 'drawin.db');
+// The database was called freeapi.db before the Drawin AI rename. An install
+// that predates it has no drawin.db, so keep opening the old file in place
+// rather than silently starting from an empty database next to it.
+const LEGACY_DB_PATH = path.join(DATA_DIR, 'freeapi.db');
 
 let db: Database.Database;
 
@@ -19,7 +25,10 @@ export function getDb(): Database.Database {
 }
 
 export function getDefaultDbPath(): string {
-  return process.env.FREEAPI_DB_PATH?.trim() || DB_PATH;
+  const configured = readEnv('DRAWIN_DB_PATH', 'FREEAPI_DB_PATH')?.trim();
+  if (configured) return configured;
+  if (!fs.existsSync(DB_PATH) && fs.existsSync(LEGACY_DB_PATH)) return LEGACY_DB_PATH;
+  return DB_PATH;
 }
 
 export function connectDb(
@@ -85,7 +94,7 @@ export function getUnifiedApiKey(): string {
 
 export function regenerateUnifiedKey(): string {
   const db = getDb();
-  const key = `freellmapi-${crypto.randomBytes(24).toString('hex')}`;
+  const key = `drawin-${crypto.randomBytes(24).toString('hex')}`;
   db.prepare("UPDATE settings SET value = ? WHERE key = 'unified_api_key'").run(key);
   return key;
 }

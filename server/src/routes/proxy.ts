@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import type { ChatMessage, ChatToolCall, ModelListRow } from '@freellmapi/shared/types.js';
+import type { ChatMessage, ChatToolCall, ModelListRow } from '@drawin/shared/types.js';
 import { routeRequest, resolveRoutingChain, resolveModelGroupCandidates, recordRateLimitHit, recordSuccess, hasEnabledVisionModel, hasEnabledToolsModel, type RouteResult, type ResolvedChain, type ChainRow } from '../services/router.js';
 import { recordRequest, recordTokens, setCooldown, getCooldownDurationForLimit, PAYMENT_REQUIRED_COOLDOWN_MS, MODEL_FORBIDDEN_COOLDOWN_MS, learnLimitFromError } from '../services/ratelimit.js';
 import { runEmbeddings, EmbeddingsError } from '../services/embeddings.js';
@@ -16,7 +16,7 @@ import { getContextHandoffMode, recordIncomingMessages, maybeInjectContextHandof
 import { isFusionModel, runFusion, fusionConfigSchema, FusionError, FUSION_MODEL_ID } from '../services/fusion.js';
 import { isRetryableError, isPaymentRequiredError, isModelNotFoundError, isModelAccessForbiddenError } from '../lib/error-classify.js';
 import { logRequest } from '../lib/request-log.js';
-import type { Platform } from '@freellmapi/shared/types.js';
+import type { Platform } from '@drawin/shared/types.js';
 import { inferQuotaPoolKey, type QuotaObservationContext } from '../services/provider-quota.js';
 import { isUnifyEnabled, getModelGroups, resolveRequestedIdToMembers } from '../services/model-groups.js';
 import { buildModelListing } from '../services/model-listing.js';
@@ -24,7 +24,7 @@ import { buildModelListing } from '../services/model-listing.js';
 export const proxyRouter = Router();
 
 // Virtual "auto" model. Clients like Hermes require a non-empty `model` field
-// on every request, but freellmapi's whole point is to pick the model itself.
+// on every request, but Drawin AI's whole point is to pick the model itself.
 // Requesting this id means "let the router decide" — identical to omitting
 // `model` entirely.
 const AUTO_MODEL_ID = 'auto';
@@ -208,7 +208,7 @@ proxyRouter.get('/models', (req: Request, res: Response) => {
         id: AUTO_MODEL_ID,
         object: 'model',
         created: 0,
-        owned_by: 'freellmapi',
+        owned_by: 'drawin',
         name: 'Auto (router picks the best available model)',
         context_window: autoContextWindow,
         // `context_length` is OpenRouter's field name and the one most
@@ -222,7 +222,7 @@ proxyRouter.get('/models', (req: Request, res: Response) => {
         id: FUSION_MODEL_ID,
         object: 'model',
         created: 0,
-        owned_by: 'freellmapi',
+        owned_by: 'drawin',
         name: 'Fusion (panel of models answer in parallel, a judge synthesizes one answer)',
         context_window: autoContextWindow,
         context_length: autoContextWindow,

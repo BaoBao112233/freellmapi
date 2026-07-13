@@ -1,5 +1,5 @@
 // nodejs-mobile entry — launched by the native runtime on app start. Runs the
-// bundled FreeLLMAPI server (server.mjs) against a SQLite file in the project's
+// bundled Drawin AI server (server.mjs) against a SQLite file in the project's
 // writable directory. The WebView discovers the port + session token by polling
 // GET /api/mobile/handshake, so this file only needs to boot the server.
 const path = require('path');
@@ -8,7 +8,12 @@ const path = require('path');
   try {
     // nodejs-mobile copies this project into an internal, writable directory and
     // runs it from there, so __dirname is a fine home for the DB file.
-    const dbPath = path.join(__dirname, 'freeapi.db');
+    // freeapi.db is the pre-rename filename: an app updated in place still has
+    // its database under it, so keep using it instead of starting empty.
+    const legacyDbPath = path.join(__dirname, 'freeapi.db');
+    const dbPath = require('fs').existsSync(legacyDbPath)
+      ? legacyDbPath
+      : path.join(__dirname, 'drawin.db');
     const { startMobileServer } = await import('./server.mjs');
     // Bind 0.0.0.0 (not just loopback) so the on-device server is reachable from
     // other machines on the same LAN — the phone can act as an LLM API gateway.
@@ -25,7 +30,7 @@ const path = require('path');
     } catch {
       /* not running under nodejs-mobile (e.g. desktop smoke test) */
     }
-    console.log(`[mobile] FreeLLMAPI server ready on 0.0.0.0:${port} (LAN-reachable)`);
+    console.log(`[mobile] Drawin AI server ready on 0.0.0.0:${port} (LAN-reachable)`);
   } catch (err) {
     console.error('[mobile] failed to start server:', (err && err.stack) || err);
   }

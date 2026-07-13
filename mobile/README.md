@@ -1,6 +1,6 @@
-# FreeLLMAPI — Android app
+# Drawin AI — Android app
 
-A **fully standalone** Android build of FreeLLMAPI: the complete Node server (the
+A **fully standalone** Android build of Drawin AI: the complete Node server (the
 LLM router + provider proxy) and the React dashboard both run **on the device**.
 No PC, no remote server — open the app and the local OpenAI-compatible endpoint
 is live at `http://localhost:3001`.
@@ -8,12 +8,12 @@ is live at `http://localhost:3001`.
 ## How it works
 
 ```
-┌─ Android APK (co.freellmapi.app) ─────────────────────────┐
+┌─ Android APK (co.drawin.app) ─────────────────────────────┐
 │                                                            │
 │  Capacitor WebView  ──HTTP──▶  nodejs-mobile (Node 18)     │
 │  (React dashboard)             └─ server.mjs (Express 5)   │
 │    localhost                      └─ node-sqlite3-wasm     │
-│                                      (freeapi.db in files) │
+│                                       (drawin.db in files) │
 │                                                            │
 │  On launch: WebView starts the Node runtime, polls         │
 │  GET /api/mobile/handshake for the local session token,    │
@@ -73,7 +73,7 @@ npm run apk:debug         # -> android/app/build/outputs/apk/debug/app-debug.apk
 
 # install + launch on a running emulator/device
 adb install -r -g android/app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -n co.freellmapi.app/.MainActivity
+adb shell am start -n co.drawin.app/.MainActivity
 ```
 
 Run `npm run sync` after any change to the client, the server, or the mobile

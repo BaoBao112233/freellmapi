@@ -1,4 +1,4 @@
-// Entry point for the FreeLLMAPI server as it runs INSIDE nodejs-mobile on the
+// Entry point for the Drawin AI server as it runs INSIDE nodejs-mobile on the
 // Android device. esbuild bundles this (and, through it, the whole server) into
 // nodejs-project/server.mjs, aliasing `better-sqlite3` -> the wasm shim and
 // keeping `node-sqlite3-wasm` external (it loads its own .wasm from disk).
